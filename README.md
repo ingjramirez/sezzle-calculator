@@ -4,30 +4,33 @@ A full-stack calculator application with a React + TypeScript frontend and Go RE
 
 ## Features
 
-- **Basic Calculator** — Addition, subtraction, multiplication, division
-- **Scientific Calculator** — Trigonometry (sin, cos, tan), logarithms (ln, log), square root, exponentiation, factorial, reciprocal, constants (pi, e)
+- **Basic Calculator** — Addition, subtraction, multiplication, division with parentheses
+- **Scientific Calculator** — Trigonometry (sin, cos, tan), logarithms (ln, log), square root, exponentiation, factorial (up to 10000! via big.Int), reciprocal, constants (pi, e)
 - **Programmer Calculator** — Bitwise operations (AND, OR, XOR, NOT), bit shifts (<<, >>), base conversion display (HEX, DEC, OCT, BIN)
-- **Mode Switcher** — Tabs to switch between Basic, Scientific, and Programmer modes
-- **Expression Display** — Shows the current operation in progress
+- **Parentheses** — Full expression support with proper operator precedence via shunting-yard algorithm
+- **Calculation History** — Inline history in the display area, click any entry to load its result, clear history button
+- **Big Number Support** — Factorials beyond 170 use big.Int with scientific notation display (e.g., 200! = 7.88657×10^374)
 - **Base Conversion** — Programmer mode displays values in hex (0x), octal (0o), binary (0b), or decimal
-- **Input Validation** — Handles division by zero, invalid input, and edge cases
+- **Unified Grid Layout** — Scientific and programmer buttons appear as extra left columns in a single grid that widens horizontally
+- **Input Validation** — Handles division by zero, mismatched parentheses, invalid input, and edge cases
 - **Responsive Design** — Works on desktop and mobile
-- **Dark Theme** — Clean, modern calculator aesthetic with distinct color themes per mode
+- **Dark Theme** — Clean, modern calculator aesthetic with distinct color themes per mode (indigo for scientific, teal for programmer)
 
 ## Architecture
 
 ```
 ├── backend/             # Go REST API
-│   ├── cmd/server/      # Entry point
+│   ├── cmd/server/      # Entry point with graceful shutdown
 │   └── internal/
-│       ├── engine/      # Math operations (pure logic, no HTTP)
-│       ├── handler/     # HTTP handlers + CORS middleware
+│       ├── engine/      # Math operations + expression evaluator (shunting-yard)
+│       ├── handler/     # HTTP handlers (calculate, evaluate, history) + CORS
+│       ├── history/     # Thread-safe in-memory history store
 │       └── model/       # Request/response types
-├── frontend/            # React + TypeScript + Tailwind
+├── frontend/            # React + TypeScript + Tailwind CSS v4
 │   └── src/
-│       ├── components/  # UI components (Calculator, Display, Button, etc.)
-│       ├── hooks/       # useCalculator reducer hook
-│       ├── services/    # API client
+│       ├── components/  # Calculator, Display, ButtonGrid, ScientificButtonGrid, etc.
+│       ├── hooks/       # useCalculator reducer hook (expression token tracking)
+│       ├── services/    # API client (calculate, evaluate, history)
 │       └── types/       # TypeScript type definitions
 └── docker-compose.yml   # Run both services together
 ```
@@ -35,10 +38,14 @@ A full-stack calculator application with a React + TypeScript frontend and Go RE
 ### Design Decisions
 
 - **Separated engine from handler** — The math engine is a pure function layer with no HTTP concerns, making it easy to test and extend with new operations.
-- **Map-based operation dispatch** — Operations are registered in a map, so adding new ones (e.g., exponentiation, modulo) requires only adding a map entry.
-- **useReducer for state** — Calculator state transitions are complex enough to warrant a reducer, but simple enough to avoid external state libraries.
-- **Backend computes results** — The frontend sends operands and operation to the API, which performs the calculation. This keeps the backend as the source of truth for math operations.
-- **Standard library only (Go)** — No external dependencies. Demonstrates Go proficiency and keeps the dependency tree clean.
+- **Map-based operation dispatch** — Binary and unary operations are registered in maps, so adding new ones requires only a map entry.
+- **Shunting-yard expression evaluator** — Supports parenthesized expressions with proper operator precedence and associativity. Used when parentheses are present; simple a-op-b path used otherwise.
+- **Big integer factorial** — Uses Go's `math/big.Int` for exact factorial computation up to 10000!. Results too large for float64 are formatted as scientific notation in a `resultDisplay` response field.
+- **useReducer with expression tokens** — Calculator state tracks expression tokens alongside traditional calculator state, enabling both simple and expression-based evaluation modes.
+- **Thread-safe history store** — In-memory store with RWMutex, auto-incrementing IDs, max 50 entries, newest-first ordering.
+- **Unified grid layout** — Scientific and programmer modes widen the grid (7 and 6 columns respectively) instead of stacking rows vertically, keeping the calculator compact.
+- **Backend computes results** — The frontend sends operands/expressions to the API, which performs the calculation. This keeps the backend as the source of truth.
+- **Standard library only (Go)** — Zero external dependencies. Uses `math/big` for large factorials.
 - **Vite proxy for dev** — During development, Vite proxies `/api` requests to the Go backend, avoiding CORS issues.
 
 ## Setup
@@ -80,14 +87,22 @@ docker compose up --build
 
 ### `POST /api/calculate`
 
-Performs an arithmetic operation on two numbers.
+Performs a single operation on one or two numbers.
 
-**Request:**
+**Binary request (two operands):**
 ```json
 {
   "operation": "add",
   "a": 10,
   "b": 5
+}
+```
+
+**Unary request (one operand):**
+```json
+{
+  "operation": "factorial",
+  "a": 200
 }
 ```
 
@@ -99,12 +114,63 @@ Performs an arithmetic operation on two numbers.
 }
 ```
 
-**Error (400):**
+**Big number response (200) — when result exceeds float64:**
 ```json
 {
-  "error": "division by zero"
+  "result": 0,
+  "resultDisplay": "7.88657×10^374",
+  "operation": "factorial"
 }
 ```
+
+### `POST /api/evaluate`
+
+Evaluates a math expression string with operator precedence and parentheses.
+
+**Request:**
+```json
+{
+  "expression": "(2 + 3) * 4"
+}
+```
+
+**Response (200):**
+```json
+{
+  "result": 20,
+  "expression": "(2 + 3) * 4"
+}
+```
+
+### `GET /api/history`
+
+Returns the calculation history (newest first, max 50 entries).
+
+**Response (200):**
+```json
+[
+  {
+    "id": 2,
+    "operation": "add",
+    "a": 5,
+    "b": 3,
+    "result": 8,
+    "timestamp": "2026-04-13T08:00:00Z"
+  },
+  {
+    "id": 1,
+    "operation": "expression",
+    "a": 0,
+    "result": 20,
+    "expression": "(2 + 3) * 4",
+    "timestamp": "2026-04-13T07:59:00Z"
+  }
+]
+```
+
+### `DELETE /api/history`
+
+Clears all history entries.
 
 #### Supported Operations
 
@@ -141,27 +207,27 @@ Performs an arithmetic operation on two numbers.
 | `tan`       | Tangent (radians)      | `tan(0) = 0`        |
 | `ln`        | Natural logarithm      | `ln(e) = 1`         |
 | `log10`     | Base-10 logarithm      | `log10(100) = 2`    |
-| `factorial` | Factorial              | `5! = 120`          |
+| `factorial` | Factorial (big.Int)    | `200! = 7.88657×10^374` |
 | `reciprocal`| Reciprocal (1/x)       | `1/4 = 0.25`        |
 | `abs`       | Absolute value         | `abs(-5) = 5`       |
 | `bitnot`    | Bitwise NOT            | `~0 = -1`           |
 
-**Unary request example:**
-```json
-{
-  "operation": "sqrt",
-  "a": 16
-}
-```
+**Expression evaluation (via `/api/evaluate`):**
+- Supports: `+`, `-`, `*`, `/`, `^`, `(`, `)`, unary minus
+- Proper operator precedence (PEMDAS)
+- Right-associative exponentiation: `2^3^2 = 512`
 
 #### Error Cases
 
-- Division by zero → `400` with error message
+- Division by zero → `400`
+- Mismatched parentheses → `400`
 - Square root of negative number → `400`
 - Logarithm of non-positive number → `400`
-- Invalid factorial (negative, non-integer, >170) → `400`
+- Invalid factorial (negative, non-integer, >10000) → `400`
 - Invalid shift amount (<0 or >63) → `400`
-- Missing required fields (`operation`, `a`) → `400`
+- Empty expression → `400`
+- Invalid characters in expression → `400`
+- Missing required fields → `400`
 - Invalid JSON → `400`
 - Unknown operation → `400`
 - Wrong HTTP method → `405`
@@ -177,18 +243,26 @@ go test ./... -v
 **Frontend:**
 ```bash
 cd frontend
-npm test
+npm test              # run tests
+npm run test:coverage # run with coverage report
 ```
 
-### Test Coverage (Backend)
+### Test Coverage
 
-- **Engine tests** — All basic, scientific, and programmer operations with edge cases (72+ tests)
-- **Handler tests** — Binary and unary operations, validation errors, bad JSON, wrong HTTP method (16+ tests)
-- **Total: 88 tests passing**
+**Backend:** 100+ tests across 5 packages
+- `engine` — All operations, expression evaluator, big factorial, edge cases (98.6%)
+- `handler` — Calculate, evaluate, history handlers (100%)
+- `history` — Thread-safe store, AddExpression, max size (100%)
+- `cmd/server` — Integration tests including graceful shutdown (95%)
+
+**Frontend:** 203 tests across 12 test files
+- Statements: 100%
+- Functions: 100%
+- Lines: 100%
 
 ## Future Enhancements
 
-- **Calculation History** — Persist and display recent calculations
 - **Keyboard Support** — Number keys, Enter for equals, Escape for clear
 - **Hex Digit Input** — A-F buttons in programmer mode for hex input
 - **Degree/Radian Toggle** — Switch between degree and radian mode for trig functions
+- **Persistent History** — Save history to database or localStorage
