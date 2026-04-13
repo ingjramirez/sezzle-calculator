@@ -5,6 +5,7 @@ interface ButtonProps {
   onClick: () => void;
   variant?: ButtonVariant;
   disabled?: boolean;
+  compact?: boolean;
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
@@ -28,12 +29,12 @@ const variantClasses: Record<ButtonVariant, string> = {
     'bg-[#1a3a3a] text-[#5ce0d8] hover:bg-[#244a4a] active:bg-[#143030]',
 };
 
-export default function Button({ label, onClick, variant = 'number', disabled = false }: ButtonProps) {
+export default function Button({ label, onClick, variant = 'number', disabled = false, compact = false }: ButtonProps) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-xl text-xl font-semibold h-16 transition-colors duration-100 cursor-pointer select-none ${variantClasses[variant]} ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
+      className={`rounded-xl font-semibold transition-colors duration-100 cursor-pointer select-none ${compact ? 'text-sm h-12 px-2' : 'text-xl h-16'} ${variantClasses[variant]} ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}
     >
       {label}
     </button>

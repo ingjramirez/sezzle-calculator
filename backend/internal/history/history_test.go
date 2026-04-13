@@ -186,6 +186,57 @@ func TestList_EmptyStore(t *testing.T) {
 	}
 }
 
+func TestAddExpression(t *testing.T) {
+	s := NewStore(50)
+
+	entry := s.AddExpression("2+3", 5)
+
+	if entry.Operation != "expression" {
+		t.Errorf("Operation = %q, want %q", entry.Operation, "expression")
+	}
+	if entry.Expression != "2+3" {
+		t.Errorf("Expression = %q, want %q", entry.Expression, "2+3")
+	}
+	if entry.Result != 5 {
+		t.Errorf("Result = %f, want 5", entry.Result)
+	}
+	if entry.Timestamp == "" {
+		t.Error("Timestamp should not be empty")
+	}
+
+	entries := s.List()
+	if len(entries) != 1 {
+		t.Fatalf("List() len = %d, want 1", len(entries))
+	}
+	if entries[0].Expression != "2+3" {
+		t.Errorf("List()[0].Expression = %q, want %q", entries[0].Expression, "2+3")
+	}
+	if entries[0].Result != 5 {
+		t.Errorf("List()[0].Result = %f, want 5", entries[0].Result)
+	}
+}
+
+func TestAddExpression_MaxSize(t *testing.T) {
+	s := NewStore(2)
+
+	s.AddExpression("1+1", 2)
+	s.AddExpression("2+2", 4)
+	s.AddExpression("3+3", 6)
+
+	entries := s.List()
+	if len(entries) != 2 {
+		t.Fatalf("List() len = %d, want 2", len(entries))
+	}
+
+	// Newest first
+	if entries[0].Expression != "3+3" {
+		t.Errorf("entries[0].Expression = %q, want %q", entries[0].Expression, "3+3")
+	}
+	if entries[1].Expression != "2+2" {
+		t.Errorf("entries[1].Expression = %q, want %q", entries[1].Expression, "2+2")
+	}
+}
+
 func TestIDsContinueAfterClear(t *testing.T) {
 	s := NewStore(50)
 

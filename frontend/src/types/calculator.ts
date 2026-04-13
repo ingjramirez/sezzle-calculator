@@ -6,6 +6,8 @@ export interface CalculatorState {
   operation: string | null;
   waitingForOperand: boolean;
   expression: string;
+  expressionTokens: string[];
+  openParens: number;
 }
 
 export type CalculatorAction =
@@ -18,7 +20,8 @@ export type CalculatorAction =
   | { type: 'PERCENTAGE' }
   | { type: 'SET_ERROR'; message: string }
   | { type: 'UNARY_OPERATION'; operation: string }
-  | { type: 'SET_CONSTANT'; value: string };
+  | { type: 'SET_CONSTANT'; value: string }
+  | { type: 'INPUT_PAREN'; paren: '(' | ')' };
 
 export interface ApiRequest {
   operation: string;
@@ -42,4 +45,5 @@ export interface HistoryEntry {
   b?: number;
   result: number;
   timestamp: string;
+  expression?: string;
 }

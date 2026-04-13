@@ -1,6 +1,6 @@
 import { useReducer, useCallback } from 'react';
 import type { CalculatorState, CalculatorAction } from '../types/calculator';
-import { calculate as apiCalculate, calculateUnary as apiCalculateUnary } from '../services/api';
+import { calculate as apiCalculate, calculateUnary as apiCalculateUnary, evaluate as apiEvaluate } from '../services/api';
 
 const initialState: CalculatorState = {
   display: '0',
@@ -8,6 +8,44 @@ const initialState: CalculatorState = {
   operation: null,
   waitingForOperand: false,
   expression: '',
+  expressionTokens: [],
+  openParens: 0,
+};
+
+function updateTokensForDigit(tokens: string[], digit: string, waitingForOperand: boolean): string[] {
+  const updated = [...tokens];
+  const last = updated[updated.length - 1];
+  if (last !== undefined && /^-?\d*\.?\d*$/.test(last) && !waitingForOperand) {
+    updated[updated.length - 1] = last + digit;
+  } else {
+    updated.push(digit);
+  }
+  return updated;
+}
+
+function updateTokensForDecimal(tokens: string[]): string[] {
+  const updated = [...tokens];
+  const last = updated[updated.length - 1];
+  if (last !== undefined && /^\d+$/.test(last)) {
+    updated[updated.length - 1] = last + '.';
+  } else {
+    updated.push('0.');
+  }
+  return updated;
+}
+
+const evalSymbolMap: Record<string, string> = {
+  add: '+',
+  subtract: '-',
+  multiply: '*',
+  divide: '/',
+  power: '^',
+  bitand: '&',
+  bitor: '|',
+  bitxor: 'XOR',
+  lshift: '<<',
+  rshift: '>>',
+  mod: '%',
 };
 
 export function reducer(state: CalculatorState, action: CalculatorAction): CalculatorState {
@@ -18,25 +56,39 @@ export function reducer(state: CalculatorState, action: CalculatorAction): Calcu
           ...state,
           display: action.digit,
           waitingForOperand: false,
+          expressionTokens: [...state.expressionTokens, action.digit],
         };
       }
       if (state.display === '0' && action.digit === '0') return state;
       const newDisplay = state.display === '0' ? action.digit : state.display + action.digit;
       if (newDisplay.replace(/[^0-9]/g, '').length > 12) return state;
-      return { ...state, display: newDisplay };
+      return {
+        ...state,
+        display: newDisplay,
+        expressionTokens: updateTokensForDigit(state.expressionTokens, action.digit, false),
+      };
     }
 
     case 'INPUT_DECIMAL': {
       if (state.waitingForOperand) {
-        return { ...state, display: '0.', waitingForOperand: false };
+        return {
+          ...state,
+          display: '0.',
+          waitingForOperand: false,
+          expressionTokens: [...state.expressionTokens, '0.'],
+        };
       }
       if (state.display.includes('.')) return state;
-      return { ...state, display: state.display + '.' };
+      return {
+        ...state,
+        display: state.display + '.',
+        expressionTokens: updateTokensForDecimal(state.expressionTokens),
+      };
     }
 
     case 'SET_OPERATION': {
       const currentValue = parseFloat(state.display);
-      const symbolMap: Record<string, string> = {
+      const displaySymbolMap: Record<string, string> = {
         add: '+',
         subtract: '-',
         multiply: 'x',
@@ -49,14 +101,17 @@ export function reducer(state: CalculatorState, action: CalculatorAction): Calcu
         rshift: '>>',
         mod: '%',
       };
-      const operationSymbol = symbolMap[action.operation] ?? action.operation;
+      const operationSymbol = displaySymbolMap[action.operation] ?? action.operation;
+      const evalSymbol = evalSymbolMap[action.operation] ?? action.operation;
+      const newTokens = [...state.expressionTokens, evalSymbol];
 
       return {
         ...state,
         previousValue: currentValue,
         operation: action.operation,
         waitingForOperand: true,
-        expression: `${currentValue} ${operationSymbol} `,
+        expression: newTokens.join(' ') + ' ',
+        expressionTokens: newTokens,
       };
     }
 
@@ -68,6 +123,8 @@ export function reducer(state: CalculatorState, action: CalculatorAction): Calcu
         operation: null,
         waitingForOperand: true,
         expression: '',
+        expressionTokens: [],
+        openParens: 0,
       };
     }
 
@@ -79,12 +136,12 @@ export function reducer(state: CalculatorState, action: CalculatorAction): Calcu
       const toggled = state.display.startsWith('-')
         ? state.display.slice(1)
         : '-' + state.display;
-      return { ...state, display: toggled };
+      return { ...state, display: toggled, expressionTokens: [], openParens: 0 };
     }
 
     case 'PERCENTAGE': {
       const value = parseFloat(state.display) / 100;
-      return { ...state, display: String(value) };
+      return { ...state, display: String(value), expressionTokens: [], openParens: 0 };
     }
 
     case 'SET_ERROR': {
@@ -104,7 +161,27 @@ export function reducer(state: CalculatorState, action: CalculatorAction): Calcu
         ...state,
         display: action.value,
         waitingForOperand: false,
+        expressionTokens: [],
+        openParens: 0,
       };
+    }
+
+    case 'INPUT_PAREN': {
+      if (action.paren === '(') {
+        return {
+          ...state,
+          expressionTokens: [...state.expressionTokens, '('],
+          openParens: state.openParens + 1,
+          waitingForOperand: true,
+        };
+      } else {
+        if (state.openParens <= 0) return state;
+        return {
+          ...state,
+          expressionTokens: [...state.expressionTokens, ')'],
+          openParens: state.openParens - 1,
+        };
+      }
     }
 
     default:
@@ -128,6 +205,18 @@ export function useCalculator() {
   }, []);
 
   const calculate = useCallback(async () => {
+    const hasParens = state.expressionTokens.some(t => t === '(' || t === ')');
+    if (hasParens) {
+      const expr = state.expressionTokens.join(' ');
+      try {
+        const result = await apiEvaluate(expr);
+        dispatch({ type: 'CALCULATE', result });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Calculation error';
+        dispatch({ type: 'SET_ERROR', message });
+      }
+      return;
+    }
     if (state.previousValue === null || state.operation === null) return;
     const b = parseFloat(state.display);
     try {
@@ -137,7 +226,7 @@ export function useCalculator() {
       const message = err instanceof Error ? err.message : 'Calculation error';
       dispatch({ type: 'SET_ERROR', message });
     }
-  }, [state.previousValue, state.operation, state.display]);
+  }, [state.expressionTokens, state.previousValue, state.operation, state.display]);
 
   const clear = useCallback(() => {
     dispatch({ type: 'CLEAR' });
@@ -170,6 +259,10 @@ export function useCalculator() {
     dispatch({ type: 'CALCULATE', result });
   }, []);
 
+  const inputParen = useCallback((paren: '(' | ')') => {
+    dispatch({ type: 'INPUT_PAREN', paren });
+  }, []);
+
   return {
     state,
     inputDigit,
@@ -182,5 +275,6 @@ export function useCalculator() {
     unaryOperation,
     setConstant,
     loadResult,
+    inputParen,
   };
 }

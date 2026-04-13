@@ -99,6 +99,14 @@ describe('formatEntry', () => {
     expect(formatEntry(makeEntry({ operation: 'custom', a: 1, b: 2, result: 3 }))).toBe('1 custom 2 = 3');
   });
 
+  it('formats expression-based entries using expression field', () => {
+    expect(formatEntry(makeEntry({ expression: '( 2 + 3 ) * 4', result: 20 }))).toBe('( 2 + 3 ) * 4 = 20');
+  });
+
+  it('prefers expression field over a/b when expression is present', () => {
+    expect(formatEntry(makeEntry({ expression: '1 + 2 + 3', a: 1, b: 2, result: 6 }))).toBe('1 + 2 + 3 = 6');
+  });
+
   it('formats all unary operations correctly', () => {
     expect(formatEntry(makeEntry({ operation: 'sqrt', a: 16, b: undefined, result: 4 }))).toBe('√16 = 4');
     expect(formatEntry(makeEntry({ operation: 'sin', a: 0, b: undefined, result: 0 }))).toBe('sin(0) = 0');

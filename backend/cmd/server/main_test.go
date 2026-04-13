@@ -41,6 +41,35 @@ func TestNewServer_Calculate(t *testing.T) {
 	}
 }
 
+func TestNewServer_Evaluate(t *testing.T) {
+	srv := newServer()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/evaluate",
+		strings.NewReader(`{"expression":"(2+3)*4"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+
+	srv.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	var resp struct {
+		Result     float64 `json:"result"`
+		Expression string  `json:"expression"`
+	}
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if resp.Result != 20 {
+		t.Errorf("result = %f, want 20", resp.Result)
+	}
+	if resp.Expression != "(2+3)*4" {
+		t.Errorf("expression = %q, want %q", resp.Expression, "(2+3)*4")
+	}
+}
+
 func TestNewServer_CORS(t *testing.T) {
 	srv := newServer()
 

@@ -6,8 +6,7 @@ interface ButtonGridProps {
   setOperation: (op: string) => void;
   calculate: () => void;
   clear: () => void;
-  toggleSign: () => void;
-  percentage: () => void;
+  inputParen: (paren: '(' | ')') => void;
 }
 
 export default function ButtonGrid({
@@ -16,15 +15,14 @@ export default function ButtonGrid({
   setOperation,
   calculate,
   clear,
-  toggleSign,
-  percentage,
+  inputParen,
 }: ButtonGridProps) {
   return (
     <div className="grid grid-cols-4 gap-3 p-3 bg-[#1c1c1e]">
       {/* Row 1 */}
       <Button label="C" onClick={clear} variant="function" />
-      <Button label="+/-" onClick={toggleSign} variant="function" />
-      <Button label="%" onClick={percentage} variant="function" />
+      <Button label="(" onClick={() => inputParen('(')} variant="function" />
+      <Button label=")" onClick={() => inputParen(')')} variant="function" />
       <Button label="÷" onClick={() => setOperation('divide')} variant="operator" />
 
       {/* Row 2 */}

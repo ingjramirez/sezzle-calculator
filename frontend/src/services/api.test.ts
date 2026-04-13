@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { calculate, calculateUnary, getHistory, clearHistory } from './api';
+import { calculate, calculateUnary, evaluate, getHistory, clearHistory } from './api';
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -90,6 +90,51 @@ describe('calculateUnary', () => {
     global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
     await expect(calculateUnary('sqrt', 9)).rejects.toThrow(
+      'Network error: unable to reach the server',
+    );
+  });
+});
+
+describe('evaluate', () => {
+  it('returns result number on successful response', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ result: 20, expression: '( 2 + 3 ) * 4' }),
+    });
+
+    const result = await evaluate('( 2 + 3 ) * 4');
+    expect(result).toBe(20);
+    expect(global.fetch).toHaveBeenCalledWith('/api/evaluate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expression: '( 2 + 3 ) * 4' }),
+    });
+  });
+
+  it('throws with error message on server error', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: () => Promise.resolve({ error: 'invalid expression' }),
+    });
+
+    await expect(evaluate('bad expr')).rejects.toThrow('invalid expression');
+  });
+
+  it('throws with fallback message when server error has no error field', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ error: '' }),
+    });
+
+    await expect(evaluate('1 + 2')).rejects.toThrow('Server error: 500');
+  });
+
+  it('throws with network error on fetch failure', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await expect(evaluate('1 + 2')).rejects.toThrow(
       'Network error: unable to reach the server',
     );
   });

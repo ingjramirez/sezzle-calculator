@@ -10,8 +10,7 @@ function createProps() {
     setOperation: vi.fn(),
     calculate: vi.fn(),
     clear: vi.fn(),
-    toggleSign: vi.fn(),
-    percentage: vi.fn(),
+    inputParen: vi.fn(),
   };
 }
 
@@ -19,7 +18,7 @@ describe('ButtonGrid', () => {
   it('renders all basic calculator buttons', () => {
     const props = createProps();
     render(<ButtonGrid {...props} />);
-    ['C', '+/-', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '−', '1', '2', '3', '+', '0', '.', '='].forEach(
+    ['C', '(', ')', '÷', '7', '8', '9', '×', '4', '5', '6', '−', '1', '2', '3', '+', '0', '.', '='].forEach(
       (label) => {
         expect(screen.getByText(label)).toBeInTheDocument();
       },
@@ -75,20 +74,20 @@ describe('ButtonGrid', () => {
     expect(props.clear).toHaveBeenCalledTimes(1);
   });
 
-  it('clicking +/- calls toggleSign', async () => {
+  it('clicking ( calls inputParen with "("', async () => {
     const user = userEvent.setup();
     const props = createProps();
     render(<ButtonGrid {...props} />);
-    await user.click(screen.getByText('+/-'));
-    expect(props.toggleSign).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByText('('));
+    expect(props.inputParen).toHaveBeenCalledWith('(');
   });
 
-  it('clicking % calls percentage', async () => {
+  it('clicking ) calls inputParen with ")"', async () => {
     const user = userEvent.setup();
     const props = createProps();
     render(<ButtonGrid {...props} />);
-    await user.click(screen.getByText('%'));
-    expect(props.percentage).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByText(')'));
+    expect(props.inputParen).toHaveBeenCalledWith(')');
   });
 
   it('clicking . calls inputDecimal', async () => {

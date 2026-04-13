@@ -24,6 +24,7 @@ export default function Calculator() {
     unaryOperation,
     setConstant,
     loadResult,
+    inputParen,
   } = useCalculator();
 
   const fetchHistory = useCallback(async () => {
@@ -65,6 +66,8 @@ export default function Calculator() {
     }
   }, []);
 
+  const widthClass = mode === 'scientific' ? 'w-[480px]' : mode === 'programmer' ? 'w-[420px]' : 'w-80';
+
   const renderButtonGrid = () => {
     switch (mode) {
       case 'scientific':
@@ -75,8 +78,7 @@ export default function Calculator() {
             setOperation={setOperation}
             calculate={handleCalculate}
             clear={clear}
-            toggleSign={toggleSign}
-            percentage={percentage}
+            inputParen={inputParen}
             unaryOperation={handleUnaryOperation}
             setConstant={setConstant}
           />
@@ -89,8 +91,8 @@ export default function Calculator() {
             setOperation={setOperation}
             calculate={handleCalculate}
             clear={clear}
+            inputParen={inputParen}
             toggleSign={toggleSign}
-            percentage={percentage}
             unaryOperation={handleUnaryOperation}
             setConstant={setConstant}
             base={base}
@@ -105,15 +107,14 @@ export default function Calculator() {
             setOperation={setOperation}
             calculate={handleCalculate}
             clear={clear}
-            toggleSign={toggleSign}
-            percentage={percentage}
+            inputParen={inputParen}
           />
         );
     }
   };
 
   return (
-    <div className="w-80 rounded-2xl shadow-2xl overflow-hidden">
+    <div className={`${widthClass} rounded-2xl shadow-2xl overflow-hidden transition-all duration-300`}>
       <ModeSelector activeMode={mode} onModeChange={handleModeChange} />
       <Display
         expression={state.expression}

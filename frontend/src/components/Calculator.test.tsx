@@ -7,6 +7,7 @@ import Calculator from './Calculator';
 vi.mock('../services/api', () => ({
   calculate: vi.fn().mockResolvedValue(0),
   calculateUnary: vi.fn().mockResolvedValue(0),
+  evaluate: vi.fn().mockResolvedValue(0),
   getHistory: vi.fn().mockResolvedValue([]),
   clearHistory: vi.fn().mockResolvedValue(undefined),
 }));
@@ -29,9 +30,11 @@ beforeEach(() => {
 describe('Calculator', () => {
   it('renders in basic mode by default', () => {
     render(<Calculator />);
-    // Basic mode has % button and no scientific buttons
+    // Basic mode has ( ) buttons and no scientific buttons
     expect(screen.getByText('C')).toBeInTheDocument();
     expect(screen.getByText('=')).toBeInTheDocument();
+    expect(screen.getByText('(')).toBeInTheDocument();
+    expect(screen.getByText(')')).toBeInTheDocument();
     expect(screen.queryByText('sin')).not.toBeInTheDocument();
     expect(screen.queryByText('AND')).not.toBeInTheDocument();
   });

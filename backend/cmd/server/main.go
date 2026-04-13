@@ -15,6 +15,7 @@ func newServer() http.Handler {
 	store := history.NewStore(50)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/calculate", handler.NewCalculateHandler(store))
+	mux.HandleFunc("/api/evaluate", handler.NewEvaluateHandler(store))
 	mux.HandleFunc("/api/history", handler.NewHistoryHandler(store))
 	return handler.CORS(mux)
 }

@@ -15,7 +15,12 @@ const binarySymbols: Record<string, string> = {
 };
 
 function formatEntry(entry: HistoryEntry): string {
-  const { operation, a, b, result } = entry;
+  const { operation, a, b, result, expression } = entry;
+
+  // Expression-based entries (from /api/evaluate)
+  if (expression) {
+    return `${expression} = ${result}`;
+  }
 
   if (b !== undefined) {
     const symbol = binarySymbols[operation] ?? operation;

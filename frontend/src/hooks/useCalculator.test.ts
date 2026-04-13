@@ -6,12 +6,14 @@ import type { CalculatorState } from '../types/calculator';
 vi.mock('../services/api', () => ({
   calculate: vi.fn(),
   calculateUnary: vi.fn(),
+  evaluate: vi.fn(),
 }));
 
-import { calculate as apiCalculate, calculateUnary as apiCalculateUnary } from '../services/api';
+import { calculate as apiCalculate, calculateUnary as apiCalculateUnary, evaluate as apiEvaluate } from '../services/api';
 
 const mockedApiCalculate = vi.mocked(apiCalculate);
 const mockedApiCalculateUnary = vi.mocked(apiCalculateUnary);
+const mockedApiEvaluate = vi.mocked(apiEvaluate);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -26,6 +28,8 @@ describe('useCalculator', () => {
       operation: null,
       waitingForOperand: false,
       expression: '',
+      expressionTokens: [],
+      openParens: 0,
     });
   });
 
@@ -69,6 +73,21 @@ describe('useCalculator', () => {
       act(() => result.current.inputDigit('3'));
       expect(result.current.state.display).toBe('3');
     });
+
+    it('tracks expression tokens when building numbers', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('1'));
+      act(() => result.current.inputDigit('2'));
+      expect(result.current.state.expressionTokens).toEqual(['12']);
+    });
+
+    it('adds new token when waitingForOperand', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.setOperation('add'));
+      act(() => result.current.inputDigit('3'));
+      expect(result.current.state.expressionTokens).toEqual(['5', '+', '3']);
+    });
   });
 
   describe('inputDecimal', () => {
@@ -91,6 +110,21 @@ describe('useCalculator', () => {
       act(() => result.current.setOperation('add'));
       act(() => result.current.inputDecimal());
       expect(result.current.state.display).toBe('0.');
+    });
+
+    it('tracks decimal in expression tokens', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('3'));
+      act(() => result.current.inputDecimal());
+      expect(result.current.state.expressionTokens).toEqual(['3.']);
+    });
+
+    it('adds 0. token when waitingForOperand', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.setOperation('add'));
+      act(() => result.current.inputDecimal());
+      expect(result.current.state.expressionTokens).toEqual(['5', '+', '0.']);
     });
   });
 
@@ -116,7 +150,7 @@ describe('useCalculator', () => {
       const { result } = renderHook(() => useCalculator());
       act(() => result.current.inputDigit('5'));
       act(() => result.current.setOperation('multiply'));
-      expect(result.current.state.expression).toBe('5 x ');
+      expect(result.current.state.expression).toBe('5 * ');
     });
 
     it('shows correct symbol for divide', () => {
@@ -181,6 +215,13 @@ describe('useCalculator', () => {
       act(() => result.current.setOperation('unknown_op'));
       expect(result.current.state.expression).toBe('5 unknown_op ');
     });
+
+    it('tracks operator in expression tokens', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.setOperation('add'));
+      expect(result.current.state.expressionTokens).toEqual(['5', '+']);
+    });
   });
 
   describe('calculate', () => {
@@ -232,6 +273,58 @@ describe('useCalculator', () => {
       });
       expect(result.current.state.display).toBe('Calculation error');
     });
+
+    it('uses evaluate API when expression contains parentheses', async () => {
+      mockedApiEvaluate.mockResolvedValue(14);
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputParen('('));
+      act(() => result.current.inputDigit('2'));
+      act(() => result.current.setOperation('add'));
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.inputParen(')'));
+      act(() => result.current.setOperation('multiply'));
+      act(() => result.current.inputDigit('2'));
+      await act(async () => {
+        await result.current.calculate();
+      });
+      expect(mockedApiEvaluate).toHaveBeenCalledWith('( 2 + 5 ) * 2');
+      expect(result.current.state.display).toBe('14');
+    });
+
+    it('handles evaluate API errors with Error instance', async () => {
+      mockedApiEvaluate.mockRejectedValue(new Error('invalid expression'));
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputParen('('));
+      act(() => result.current.inputDigit('1'));
+      await act(async () => {
+        await result.current.calculate();
+      });
+      expect(result.current.state.display).toBe('invalid expression');
+    });
+
+    it('handles evaluate API errors with non-Error thrown value', async () => {
+      mockedApiEvaluate.mockRejectedValue(42);
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputParen('('));
+      act(() => result.current.inputDigit('1'));
+      await act(async () => {
+        await result.current.calculate();
+      });
+      expect(result.current.state.display).toBe('Calculation error');
+    });
+
+    it('resets expression tokens after successful calculation', async () => {
+      mockedApiCalculate.mockResolvedValue(10);
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.setOperation('add'));
+      act(() => result.current.inputDigit('5'));
+      await act(async () => {
+        await result.current.calculate();
+      });
+      expect(result.current.state.expressionTokens).toEqual([]);
+      expect(result.current.state.openParens).toBe(0);
+    });
   });
 
   describe('clear', () => {
@@ -246,7 +339,18 @@ describe('useCalculator', () => {
         operation: null,
         waitingForOperand: false,
         expression: '',
+        expressionTokens: [],
+        openParens: 0,
       });
+    });
+
+    it('resets expression tokens and openParens', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputParen('('));
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.clear());
+      expect(result.current.state.expressionTokens).toEqual([]);
+      expect(result.current.state.openParens).toBe(0);
     });
   });
 
@@ -271,6 +375,14 @@ describe('useCalculator', () => {
       act(() => result.current.toggleSign());
       expect(result.current.state.display).toBe('0');
     });
+
+    it('resets expression tokens', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.toggleSign());
+      expect(result.current.state.expressionTokens).toEqual([]);
+      expect(result.current.state.openParens).toBe(0);
+    });
   });
 
   describe('percentage', () => {
@@ -280,6 +392,14 @@ describe('useCalculator', () => {
       act(() => result.current.inputDigit('0'));
       act(() => result.current.percentage());
       expect(result.current.state.display).toBe('0.5');
+    });
+
+    it('resets expression tokens', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.percentage());
+      expect(result.current.state.expressionTokens).toEqual([]);
+      expect(result.current.state.openParens).toBe(0);
     });
   });
 
@@ -323,6 +443,14 @@ describe('useCalculator', () => {
       expect(result.current.state.display).toBe(String(Math.PI));
       expect(result.current.state.waitingForOperand).toBe(false);
     });
+
+    it('resets expression tokens', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.setConstant(Math.PI));
+      expect(result.current.state.expressionTokens).toEqual([]);
+      expect(result.current.state.openParens).toBe(0);
+    });
   });
 
   describe('loadResult', () => {
@@ -338,6 +466,45 @@ describe('useCalculator', () => {
       expect(result.current.state.expression).toBe('');
     });
   });
+
+  describe('inputParen', () => {
+    it('inputParen("(") adds to expressionTokens and increments openParens', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputParen('('));
+      expect(result.current.state.expressionTokens).toEqual(['(']);
+      expect(result.current.state.openParens).toBe(1);
+      expect(result.current.state.waitingForOperand).toBe(true);
+    });
+
+    it('inputParen(")") decrements openParens', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputParen('('));
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.inputParen(')'));
+      expect(result.current.state.expressionTokens).toEqual(['(', '5', ')']);
+      expect(result.current.state.openParens).toBe(0);
+    });
+
+    it('inputParen(")") is no-op when openParens is 0', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputParen(')'));
+      expect(result.current.state.expressionTokens).toEqual([]);
+      expect(result.current.state.openParens).toBe(0);
+    });
+
+    it('supports nested parentheses', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputParen('('));
+      act(() => result.current.inputParen('('));
+      expect(result.current.state.openParens).toBe(2);
+      act(() => result.current.inputDigit('3'));
+      act(() => result.current.inputParen(')'));
+      expect(result.current.state.openParens).toBe(1);
+      act(() => result.current.inputParen(')'));
+      expect(result.current.state.openParens).toBe(0);
+      expect(result.current.state.expressionTokens).toEqual(['(', '(', '3', ')', ')']);
+    });
+  });
 });
 
 describe('reducer (direct)', () => {
@@ -347,6 +514,8 @@ describe('reducer (direct)', () => {
     operation: null,
     waitingForOperand: false,
     expression: '',
+    expressionTokens: [],
+    openParens: 0,
   };
 
   it('UNARY_OPERATION action returns state unchanged (no-op)', () => {
@@ -358,5 +527,23 @@ describe('reducer (direct)', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = reducer(initialState, { type: 'UNKNOWN_ACTION' } as any);
     expect(result).toBe(initialState);
+  });
+
+  it('INPUT_DECIMAL adds 0. token when no prior tokens exist', () => {
+    const result = reducer(initialState, { type: 'INPUT_DECIMAL' });
+    expect(result.expressionTokens).toEqual(['0.']);
+    expect(result.display).toBe('0.');
+  });
+
+  it('SET_ERROR resets to initial state with error message display', () => {
+    const stateWithTokens: CalculatorState = {
+      ...initialState,
+      expressionTokens: ['(', '5', '+', '3'],
+      openParens: 1,
+    };
+    const result = reducer(stateWithTokens, { type: 'SET_ERROR', message: 'Error' });
+    expect(result.display).toBe('Error');
+    expect(result.expressionTokens).toEqual([]);
+    expect(result.openParens).toBe(0);
   });
 });

@@ -10,8 +10,8 @@ function createProps(overrides: Record<string, unknown> = {}) {
     setOperation: vi.fn(),
     calculate: vi.fn(),
     clear: vi.fn(),
+    inputParen: vi.fn(),
     toggleSign: vi.fn(),
-    percentage: vi.fn(),
     unaryOperation: vi.fn(),
     setConstant: vi.fn(),
     base: 10,
@@ -36,6 +36,13 @@ describe('ProgrammerButtonGrid', () => {
     ['AND', 'OR', 'XOR', 'NOT', '<<', '>>'].forEach((label) => {
       expect(screen.getByText(label)).toBeInTheDocument();
     });
+  });
+
+  it('renders parenthesis buttons', () => {
+    const props = createProps();
+    render(<ProgrammerButtonGrid {...props} />);
+    expect(screen.getByText('(')).toBeInTheDocument();
+    expect(screen.getByText(')')).toBeInTheDocument();
   });
 
   it('active base is highlighted', () => {
@@ -93,6 +100,22 @@ describe('ProgrammerButtonGrid', () => {
     render(<ProgrammerButtonGrid {...props} />);
     await user.click(screen.getByText('>>'));
     expect(props.setOperation).toHaveBeenCalledWith('rshift');
+  });
+
+  it('clicking ( calls inputParen with "("', async () => {
+    const user = userEvent.setup();
+    const props = createProps();
+    render(<ProgrammerButtonGrid {...props} />);
+    await user.click(screen.getByText('('));
+    expect(props.inputParen).toHaveBeenCalledWith('(');
+  });
+
+  it('clicking ) calls inputParen with ")"', async () => {
+    const user = userEvent.setup();
+    const props = createProps();
+    render(<ProgrammerButtonGrid {...props} />);
+    await user.click(screen.getByText(')'));
+    expect(props.inputParen).toHaveBeenCalledWith(')');
   });
 
   it('clicking base buttons calls onBaseChange with correct base', async () => {

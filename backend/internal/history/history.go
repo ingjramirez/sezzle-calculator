@@ -49,6 +49,30 @@ func (s *Store) Add(operation string, a float64, b *float64, result float64) mod
 	return entry
 }
 
+// AddExpression adds a history entry for an evaluated expression.
+func (s *Store) AddExpression(expression string, result float64) model.HistoryEntry {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	entry := model.HistoryEntry{
+		ID:         s.nextID,
+		Operation:  "expression",
+		Expression: expression,
+		Result:     result,
+		Timestamp:  time.Now().UTC().Format(time.RFC3339),
+	}
+	s.nextID++
+
+	s.entries = append(s.entries, entry)
+
+	// Trim to maxSize (drop oldest)
+	if len(s.entries) > s.maxSize {
+		s.entries = s.entries[len(s.entries)-s.maxSize:]
+	}
+
+	return entry
+}
+
 // List returns all entries newest first.
 func (s *Store) List() []model.HistoryEntry {
 	s.mu.RLock()
