@@ -7,14 +7,14 @@ beforeEach(() => {
 
 describe('calculate', () => {
   it('returns result and resultDisplay on successful response', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ result: 42, operation: 'add' }),
     });
 
     const response = await calculate('add', 20, 22);
     expect(response).toEqual({ result: 42, resultDisplay: undefined });
-    expect(global.fetch).toHaveBeenCalledWith('/api/calculate', {
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/calculate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ operation: 'add', a: 20, b: 22 }),
@@ -22,7 +22,7 @@ describe('calculate', () => {
   });
 
   it('returns resultDisplay when provided by API', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ result: Infinity, resultDisplay: '4.02387\u00d710^2567', operation: 'factorial' }),
     });
@@ -32,7 +32,7 @@ describe('calculate', () => {
   });
 
   it('throws with error message on server error', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 400,
       json: () => Promise.resolve({ error: 'division by zero' }),
@@ -42,7 +42,7 @@ describe('calculate', () => {
   });
 
   it('throws with fallback message when server error has no error field', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
       json: () => Promise.resolve({ error: '' }),
@@ -52,7 +52,7 @@ describe('calculate', () => {
   });
 
   it('throws with network error on fetch failure', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
     await expect(calculate('add', 1, 2)).rejects.toThrow(
       'Network error: unable to reach the server',
@@ -62,14 +62,14 @@ describe('calculate', () => {
 
 describe('calculateUnary', () => {
   it('returns result and resultDisplay on successful response', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ result: 3, operation: 'sqrt' }),
     });
 
     const response = await calculateUnary('sqrt', 9);
     expect(response).toEqual({ result: 3, resultDisplay: undefined });
-    expect(global.fetch).toHaveBeenCalledWith('/api/calculate', {
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/calculate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ operation: 'sqrt', a: 9 }),
@@ -77,7 +77,7 @@ describe('calculateUnary', () => {
   });
 
   it('returns resultDisplay when provided by API', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ result: Infinity, resultDisplay: '4.02387\u00d710^2567', operation: 'factorial' }),
     });
@@ -87,7 +87,7 @@ describe('calculateUnary', () => {
   });
 
   it('throws with error message on server error', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 400,
       json: () => Promise.resolve({ error: 'invalid operation' }),
@@ -97,7 +97,7 @@ describe('calculateUnary', () => {
   });
 
   it('throws with fallback message when server error has no error field', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 503,
       json: () => Promise.resolve({ error: '' }),
@@ -107,7 +107,7 @@ describe('calculateUnary', () => {
   });
 
   it('throws with network error on fetch failure', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
     await expect(calculateUnary('sqrt', 9)).rejects.toThrow(
       'Network error: unable to reach the server',
@@ -117,14 +117,14 @@ describe('calculateUnary', () => {
 
 describe('evaluate', () => {
   it('returns result and resultDisplay on successful response', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ result: 20, expression: '( 2 + 3 ) * 4' }),
     });
 
     const response = await evaluate('( 2 + 3 ) * 4');
     expect(response).toEqual({ result: 20, resultDisplay: undefined });
-    expect(global.fetch).toHaveBeenCalledWith('/api/evaluate', {
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/evaluate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ expression: '( 2 + 3 ) * 4' }),
@@ -132,7 +132,7 @@ describe('evaluate', () => {
   });
 
   it('returns resultDisplay when provided by API', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ result: Infinity, resultDisplay: '1.5\u00d710^100', expression: '10 ^ 100 * 1.5' }),
     });
@@ -142,7 +142,7 @@ describe('evaluate', () => {
   });
 
   it('throws with error message on server error', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 400,
       json: () => Promise.resolve({ error: 'invalid expression' }),
@@ -152,7 +152,7 @@ describe('evaluate', () => {
   });
 
   it('throws with fallback message when server error has no error field', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
       json: () => Promise.resolve({ error: '' }),
@@ -162,7 +162,7 @@ describe('evaluate', () => {
   });
 
   it('throws with network error on fetch failure', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
     await expect(evaluate('1 + 2')).rejects.toThrow(
       'Network error: unable to reach the server',
@@ -175,18 +175,18 @@ describe('getHistory', () => {
     const entries = [
       { id: 1, operation: 'add', a: 1, b: 2, result: 3, timestamp: '2024-01-01T00:00:00Z' },
     ];
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(entries),
     });
 
     const result = await getHistory();
     expect(result).toEqual(entries);
-    expect(global.fetch).toHaveBeenCalledWith('/api/history');
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/history');
   });
 
   it('throws with error message on server error', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
       json: () => Promise.resolve({ error: 'internal error' }),
@@ -196,7 +196,7 @@ describe('getHistory', () => {
   });
 
   it('throws with fallback message when server error has no error field', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
       json: () => Promise.resolve({ error: '' }),
@@ -206,7 +206,7 @@ describe('getHistory', () => {
   });
 
   it('throws with network error on fetch failure', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
     await expect(getHistory()).rejects.toThrow(
       'Network error: unable to reach the server',
@@ -216,17 +216,17 @@ describe('getHistory', () => {
 
 describe('clearHistory', () => {
   it('completes successfully on ok response', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ status: 'cleared' }),
     });
 
     await expect(clearHistory()).resolves.toBeUndefined();
-    expect(global.fetch).toHaveBeenCalledWith('/api/history', { method: 'DELETE' });
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/history', { method: 'DELETE' });
   });
 
   it('throws with error message on server error', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
       json: () => Promise.resolve({ error: 'cannot clear' }),
@@ -236,7 +236,7 @@ describe('clearHistory', () => {
   });
 
   it('throws with fallback message when server error has no error field', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 503,
       json: () => Promise.resolve({ error: '' }),
@@ -246,7 +246,7 @@ describe('clearHistory', () => {
   });
 
   it('throws with network error on fetch failure', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
     await expect(clearHistory()).rejects.toThrow(
       'Network error: unable to reach the server',

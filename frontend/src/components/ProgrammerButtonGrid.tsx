@@ -2,14 +2,12 @@ import Button from './Button';
 
 interface ProgrammerButtonGridProps {
   inputDigit: (digit: string) => void;
-  inputDecimal: () => void;
   setOperation: (op: string) => void;
   calculate: () => void;
   clear: () => void;
   inputParen: (paren: '(' | ')') => void;
   toggleSign: () => void;
   unaryOperation: (operation: string) => void;
-  setConstant: (value: number) => void;
   base: number;
   onBaseChange: (base: number) => void;
 }
@@ -20,7 +18,6 @@ function isDigitEnabled(digit: number, base: number): boolean {
 
 export default function ProgrammerButtonGrid({
   inputDigit,
-  inputDecimal,
   setOperation,
   calculate,
   clear,

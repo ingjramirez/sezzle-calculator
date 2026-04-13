@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"math"
 	"net/http"
 
@@ -18,6 +19,8 @@ func NewCalculateHandler(store *history.Store) http.HandlerFunc {
 			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 			return
 		}
+
+		r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1 MB limit
 
 		var req model.CalculateRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -81,7 +84,9 @@ func NewCalculateHandler(store *history.Store) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(resp)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			log.Printf("encode response: %v", err)
+		}
 	}
 }
 
@@ -89,5 +94,7 @@ func NewCalculateHandler(store *history.Store) http.HandlerFunc {
 func writeError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(model.ErrorResponse{Error: message})
+	if err := json.NewEncoder(w).Encode(model.ErrorResponse{Error: message}); err != nil {
+		log.Printf("encode response: %v", err)
+	}
 }

@@ -20,7 +20,6 @@ export default function Calculator() {
     calculate,
     clear,
     toggleSign,
-    percentage,
     unaryOperation,
     setConstant,
     loadResult,
@@ -69,7 +68,10 @@ export default function Calculator() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key >= '0' && e.key <= '9') {
-        inputDigit(e.key);
+        const digit = parseInt(e.key, 10);
+        if (mode !== 'programmer' || digit < base) {
+          inputDigit(e.key);
+        }
       } else if (e.key === '.') {
         inputDecimal();
       } else if (e.key === '+') {
@@ -98,7 +100,7 @@ export default function Calculator() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [inputDigit, inputDecimal, setOperation, inputParen, handleCalculate, clear]);
+  }, [inputDigit, inputDecimal, setOperation, inputParen, handleCalculate, clear, mode, base]);
 
   const widthClass = mode === 'scientific' ? 'w-[480px]' : mode === 'programmer' ? 'w-[420px]' : 'w-80';
 
@@ -121,14 +123,12 @@ export default function Calculator() {
         return (
           <ProgrammerButtonGrid
             inputDigit={inputDigit}
-            inputDecimal={inputDecimal}
             setOperation={setOperation}
             calculate={handleCalculate}
             clear={clear}
             inputParen={inputParen}
             toggleSign={toggleSign}
             unaryOperation={handleUnaryOperation}
-            setConstant={setConstant}
             base={base}
             onBaseChange={setBase}
           />

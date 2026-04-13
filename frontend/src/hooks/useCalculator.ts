@@ -1,5 +1,6 @@
 import { useReducer, useCallback } from 'react';
 import type { CalculatorState, CalculatorAction } from '../types/calculator';
+import { OPERATION_EVAL_SYMBOLS } from '../types/calculator';
 import { calculate as apiCalculate, calculateUnary as apiCalculateUnary, evaluate as apiEvaluate } from '../services/api';
 
 const initialState: CalculatorState = {
@@ -34,20 +35,6 @@ function updateTokensForDecimal(tokens: string[]): string[] {
   }
   return updated;
 }
-
-const evalSymbolMap: Record<string, string> = {
-  add: '+',
-  subtract: '-',
-  multiply: '*',
-  divide: '/',
-  power: '^',
-  bitand: '&',
-  bitor: '|',
-  bitxor: 'XOR',
-  lshift: '<<',
-  rshift: '>>',
-  mod: '%',
-};
 
 export function reducer(state: CalculatorState, action: CalculatorAction): CalculatorState {
   switch (action.type) {
@@ -89,21 +76,7 @@ export function reducer(state: CalculatorState, action: CalculatorAction): Calcu
 
     case 'SET_OPERATION': {
       const currentValue = parseFloat(state.display);
-      const displaySymbolMap: Record<string, string> = {
-        add: '+',
-        subtract: '-',
-        multiply: 'x',
-        divide: '/',
-        power: '^',
-        bitand: '&',
-        bitor: '|',
-        bitxor: 'XOR',
-        lshift: '<<',
-        rshift: '>>',
-        mod: '%',
-      };
-      const operationSymbol = displaySymbolMap[action.operation] ?? action.operation;
-      const evalSymbol = evalSymbolMap[action.operation] ?? action.operation;
+      const evalSymbol = OPERATION_EVAL_SYMBOLS[action.operation] ?? action.operation;
       const newTokens = [...state.expressionTokens, evalSymbol];
 
       return {
@@ -139,12 +112,27 @@ export function reducer(state: CalculatorState, action: CalculatorAction): Calcu
       const toggled = state.display.startsWith('-')
         ? state.display.slice(1)
         : '-' + state.display;
-      return { ...state, display: toggled, expressionTokens: [], openParens: 0 };
+      // Update last expression token to match
+      const tokens = [...state.expressionTokens];
+      if (tokens.length > 0) {
+        const last = tokens[tokens.length - 1];
+        if (/^-?\d/.test(last)) {
+          tokens[tokens.length - 1] = toggled;
+        }
+      }
+      return { ...state, display: toggled, expressionTokens: tokens };
     }
 
     case 'PERCENTAGE': {
       const value = parseFloat(state.display) / 100;
-      return { ...state, display: String(value), expressionTokens: [], openParens: 0 };
+      const tokens = [...state.expressionTokens];
+      if (tokens.length > 0) {
+        const last = tokens[tokens.length - 1];
+        if (/^-?\d/.test(last)) {
+          tokens[tokens.length - 1] = String(value);
+        }
+      }
+      return { ...state, display: String(value), expressionTokens: tokens };
     }
 
     case 'SET_ERROR': {
@@ -153,11 +141,6 @@ export function reducer(state: CalculatorState, action: CalculatorAction): Calcu
         display: action.message,
         resultDisplay: '',
       };
-    }
-
-    case 'UNARY_OPERATION': {
-      // Handled async outside reducer; reducer is a no-op for this action
-      return state;
     }
 
     case 'SET_CONSTANT': {

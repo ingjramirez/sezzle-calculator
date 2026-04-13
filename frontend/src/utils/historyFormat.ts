@@ -1,7 +1,7 @@
 import type { HistoryEntry } from '../types/calculator';
 import { OPERATION_DISPLAY_SYMBOLS } from '../types/calculator';
 
-function formatEntry(entry: HistoryEntry): string {
+export function formatEntry(entry: HistoryEntry): string {
   const { operation, a, b, result, expression, resultDisplay } = entry;
   const displayResult = resultDisplay || String(result);
 
@@ -17,7 +17,7 @@ function formatEntry(entry: HistoryEntry): string {
 
   switch (operation) {
     case 'sqrt':
-      return `√${a} = ${displayResult}`;
+      return `\u221a${a} = ${displayResult}`;
     case 'sin':
       return `sin(${a}) = ${displayResult}`;
     case 'cos':
@@ -31,9 +31,9 @@ function formatEntry(entry: HistoryEntry): string {
     case 'factorial':
       return `${a}! = ${displayResult}`;
     case 'square':
-      return `${a}² = ${displayResult}`;
+      return `${a}\u00b2 = ${displayResult}`;
     case 'cube':
-      return `${a}³ = ${displayResult}`;
+      return `${a}\u00b3 = ${displayResult}`;
     case 'reciprocal':
       return `1/${a} = ${displayResult}`;
     case 'abs':
@@ -45,7 +45,7 @@ function formatEntry(entry: HistoryEntry): string {
   }
 }
 
-function formatTimestamp(timestamp: string): string {
+export function formatTimestamp(timestamp: string): string {
   const date = new Date(timestamp);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -59,5 +59,3 @@ function formatTimestamp(timestamp: string): string {
 
   return date.toLocaleDateString();
 }
-
-export { formatEntry, formatTimestamp };

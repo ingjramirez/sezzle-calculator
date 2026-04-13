@@ -20,15 +20,26 @@ export type CalculatorAction =
   | { type: 'TOGGLE_SIGN' }
   | { type: 'PERCENTAGE' }
   | { type: 'SET_ERROR'; message: string }
-  | { type: 'UNARY_OPERATION'; operation: string }
   | { type: 'SET_CONSTANT'; value: string }
   | { type: 'INPUT_PAREN'; paren: '(' | ')' };
 
 export interface ApiRequest {
   operation: string;
   a: number;
-  b: number;
+  b?: number;
 }
+
+export const OPERATION_DISPLAY_SYMBOLS: Record<string, string> = {
+  add: '+', subtract: '\u2212', multiply: '\u00d7', divide: '\u00f7',
+  power: '^', bitand: '&', bitor: '|', bitxor: 'XOR',
+  lshift: '<<', rshift: '>>', mod: '%',
+};
+
+export const OPERATION_EVAL_SYMBOLS: Record<string, string> = {
+  add: '+', subtract: '-', multiply: '*', divide: '/',
+  power: '^', bitand: '&', bitor: '|', bitxor: 'XOR',
+  lshift: '<<', rshift: '>>', mod: '%',
+};
 
 export interface ApiResponse {
   result: number;

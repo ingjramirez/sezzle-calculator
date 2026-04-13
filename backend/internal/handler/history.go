@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/jaime-ramirez/sezzle-calculator/backend/internal/history"
@@ -15,12 +16,16 @@ func NewHistoryHandler(store *history.Store) http.HandlerFunc {
 			entries := store.List()
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(entries)
+			if err := json.NewEncoder(w).Encode(entries); err != nil {
+				log.Printf("encode response: %v", err)
+			}
 		case http.MethodDelete:
 			store.Clear()
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"status": "cleared"})
+			if err := json.NewEncoder(w).Encode(map[string]string{"status": "cleared"}); err != nil {
+				log.Printf("encode response: %v", err)
+			}
 		default:
 			writeError(w, http.StatusMethodNotAllowed, "method not allowed")
 		}

@@ -1,10 +1,8 @@
 services:
   backend:
     build: ./backend
-    ports:
-      - "8080:8080"
     environment:
-      - CORS_ORIGIN=*
+      - CORS_ORIGIN=http://localhost:3000
       - MAX_HISTORY=50
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]

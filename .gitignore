@@ -12,6 +12,10 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 
+# Test coverage
+backend/cover.out
+frontend/coverage/
+
 # Environment
 .env
 .env.local

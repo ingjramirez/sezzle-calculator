@@ -55,6 +55,7 @@ export default function Display({ expression, value, base = 10, history = [], on
       <div ref={scrollRef} className="flex-1 overflow-y-auto max-h-[72px] scrollbar-thin">
         {history.length > 0 ? (
           <ul className="space-y-0.5">
+            {/* API returns newest-first; reverse so oldest is at top, newest at bottom (scroll target) */}
             {[...history].reverse().map((entry) => (
               <li
                 key={entry.id}

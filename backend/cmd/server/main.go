@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/jaime-ramirez/sezzle-calculator/backend/internal/handler"
 	"github.com/jaime-ramirez/sezzle-calculator/backend/internal/history"
@@ -32,6 +34,7 @@ func newServer() http.Handler {
 	mux.HandleFunc("/api/evaluate", handler.NewEvaluateHandler(store))
 	mux.HandleFunc("/api/history", handler.NewHistoryHandler(store))
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok"}`))
 	})
@@ -52,13 +55,20 @@ func run(ctx context.Context, addr string) error {
 // serve starts the HTTP server on the given listener and blocks until the
 // context is cancelled or an unrecoverable error occurs.
 func serve(ctx context.Context, ln net.Listener) error {
-	srv := &http.Server{Handler: newServer()}
+	srv := &http.Server{
+		Handler:      newServer(),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
 	go func() {
 		<-ctx.Done()
-		srv.Close()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		srv.Shutdown(shutdownCtx)
 	}()
 	err := srv.Serve(ln)
-	if err == http.ErrServerClosed {
+	if errors.Is(err, http.ErrServerClosed) {
 		return nil
 	}
 	return err

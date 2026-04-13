@@ -391,12 +391,11 @@ describe('useCalculator', () => {
       expect(result.current.state.display).toBe('0');
     });
 
-    it('resets expression tokens', () => {
+    it('updates last expression token to toggled value', () => {
       const { result } = renderHook(() => useCalculator());
       act(() => result.current.inputDigit('5'));
       act(() => result.current.toggleSign());
-      expect(result.current.state.expressionTokens).toEqual([]);
-      expect(result.current.state.openParens).toBe(0);
+      expect(result.current.state.expressionTokens).toEqual(['-5']);
     });
   });
 
@@ -409,12 +408,11 @@ describe('useCalculator', () => {
       expect(result.current.state.display).toBe('0.5');
     });
 
-    it('resets expression tokens', () => {
+    it('updates last expression token to percentage value', () => {
       const { result } = renderHook(() => useCalculator());
       act(() => result.current.inputDigit('5'));
       act(() => result.current.percentage());
-      expect(result.current.state.expressionTokens).toEqual([]);
-      expect(result.current.state.openParens).toBe(0);
+      expect(result.current.state.expressionTokens).toEqual(['0.05']);
     });
   });
 
@@ -544,11 +542,6 @@ describe('reducer (direct)', () => {
     openParens: 0,
     resultDisplay: '',
   };
-
-  it('UNARY_OPERATION action returns state unchanged (no-op)', () => {
-    const result = reducer(initialState, { type: 'UNARY_OPERATION', operation: 'sqrt' });
-    expect(result).toBe(initialState);
-  });
 
   it('unknown action type returns state unchanged (default case)', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

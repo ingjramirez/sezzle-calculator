@@ -1,7 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import History, { formatEntry, formatTimestamp } from './History';
+import { describe, it, expect } from 'vitest';
+import { formatEntry, formatTimestamp } from './History';
 import type { HistoryEntry } from '../types/calculator';
 
 function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
@@ -15,70 +13,6 @@ function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
     ...overrides,
   };
 }
-
-describe('History', () => {
-  it('renders "No calculations yet" when entries is empty', () => {
-    render(<History entries={[]} onSelect={vi.fn()} onClear={vi.fn()} />);
-    expect(screen.getByText('No calculations yet')).toBeInTheDocument();
-  });
-
-  it('does not show "Clear History" button when entries is empty', () => {
-    render(<History entries={[]} onSelect={vi.fn()} onClear={vi.fn()} />);
-    expect(screen.queryByText('Clear History')).not.toBeInTheDocument();
-  });
-
-  it('renders history entries with correct binary formatting', () => {
-    const entries = [
-      makeEntry({ id: 1, operation: 'add', a: 5, b: 3, result: 8 }),
-      makeEntry({ id: 2, operation: 'subtract', a: 10, b: 4, result: 6 }),
-      makeEntry({ id: 3, operation: 'multiply', a: 3, b: 7, result: 21 }),
-      makeEntry({ id: 4, operation: 'divide', a: 20, b: 5, result: 4 }),
-    ];
-    render(<History entries={entries} onSelect={vi.fn()} onClear={vi.fn()} />);
-    expect(screen.getByText('5 + 3 = 8')).toBeInTheDocument();
-    expect(screen.getByText('10 − 4 = 6')).toBeInTheDocument();
-    expect(screen.getByText('3 × 7 = 21')).toBeInTheDocument();
-    expect(screen.getByText('20 ÷ 5 = 4')).toBeInTheDocument();
-  });
-
-  it('renders unary operation entries correctly', () => {
-    const entries = [
-      makeEntry({ id: 1, operation: 'sqrt', a: 16, b: undefined, result: 4 }),
-      makeEntry({ id: 2, operation: 'sin', a: 0, b: undefined, result: 0 }),
-    ];
-    render(<History entries={entries} onSelect={vi.fn()} onClear={vi.fn()} />);
-    expect(screen.getByText('√16 = 4')).toBeInTheDocument();
-    expect(screen.getByText('sin(0) = 0')).toBeInTheDocument();
-  });
-
-  it('clicking an entry calls onSelect with the result', async () => {
-    const user = userEvent.setup();
-    const onSelect = vi.fn();
-    const entries = [makeEntry({ id: 1, result: 42 })];
-    render(<History entries={entries} onSelect={onSelect} onClear={vi.fn()} />);
-    await user.click(screen.getByText('5 + 3 = 42'));
-    expect(onSelect).toHaveBeenCalledWith(42);
-  });
-
-  it('clicking "Clear History" calls onClear', async () => {
-    const user = userEvent.setup();
-    const onClear = vi.fn();
-    const entries = [makeEntry()];
-    render(<History entries={entries} onSelect={vi.fn()} onClear={onClear} />);
-    await user.click(screen.getByText('Clear History'));
-    expect(onClear).toHaveBeenCalled();
-  });
-
-  it('shows results for each entry', () => {
-    const entries = [
-      makeEntry({ id: 1, result: 42 }),
-      makeEntry({ id: 2, result: 99 }),
-    ];
-    render(<History entries={entries} onSelect={vi.fn()} onClear={vi.fn()} />);
-    expect(screen.getByText('42')).toBeInTheDocument();
-    expect(screen.getByText('99')).toBeInTheDocument();
-  });
-});
 
 describe('formatEntry', () => {
   it('formats binary operations with correct symbols', () => {

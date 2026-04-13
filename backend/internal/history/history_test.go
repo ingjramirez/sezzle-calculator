@@ -237,7 +237,7 @@ func TestAddExpression_MaxSize(t *testing.T) {
 	}
 }
 
-func TestIDsContinueAfterClear(t *testing.T) {
+func TestIDsResetAfterClear(t *testing.T) {
 	s := NewStore(50)
 
 	b := 1.0
@@ -247,7 +247,7 @@ func TestIDsContinueAfterClear(t *testing.T) {
 	s.Clear()
 
 	e := s.Add("add", 3, &b, 4, "")
-	if e.ID != 3 {
-		t.Errorf("ID after clear = %d, want 3 (IDs should continue)", e.ID)
+	if e.ID != 1 {
+		t.Errorf("ID after clear = %d, want 1 (IDs should reset)", e.ID)
 	}
 }

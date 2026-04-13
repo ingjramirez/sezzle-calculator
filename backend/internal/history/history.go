@@ -18,7 +18,7 @@ type Store struct {
 // NewStore creates a new Store that keeps at most maxSize entries.
 func NewStore(maxSize int) *Store {
 	return &Store{
-		entries: make([]model.HistoryEntry, 0),
+		entries: make([]model.HistoryEntry, 0, maxSize),
 		nextID:  1,
 		maxSize: maxSize,
 	}
@@ -92,4 +92,5 @@ func (s *Store) Clear() {
 	defer s.mu.Unlock()
 
 	s.entries = make([]model.HistoryEntry, 0)
+	s.nextID = 1
 }

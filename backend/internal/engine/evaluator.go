@@ -16,6 +16,7 @@ var (
 	ErrInvalidCharacter     = errors.New("invalid character")
 	ErrMalformedExpression  = errors.New("malformed expression")
 	ErrConsecutiveOperators = errors.New("consecutive operators without operand")
+	ErrShiftOutOfRange      = errors.New("shift amount must be 0-63")
 )
 
 // tokenType classifies tokens produced by the tokenizer.
@@ -37,16 +38,20 @@ type token struct {
 // precedence returns the operator precedence.
 func precedence(op string) int {
 	switch op {
-	case "+", "-":
-		return 1
-	case "*", "/":
-		return 2
-	case "^":
-		return 3
-	case "neg":
-		return 4
-	default:
+	case "&", "|":
 		return 0
+	case "<<", ">>":
+		return 1
+	case "+", "-":
+		return 2
+	case "*", "/", "%":
+		return 3
+	case "^":
+		return 4
+	case "neg":
+		return 5
+	default:
+		return -1
 	}
 }
 
@@ -57,7 +62,8 @@ func isRightAssociative(op string) bool {
 
 // isOperator returns true if the string is a binary operator.
 func isOperator(s string) bool {
-	return s == "+" || s == "-" || s == "*" || s == "/" || s == "^"
+	return s == "+" || s == "-" || s == "*" || s == "/" || s == "^" ||
+		s == "&" || s == "|" || s == "%" || s == "<<" || s == ">>"
 }
 
 // tokenize splits an expression string into tokens.
@@ -100,7 +106,7 @@ func tokenize(expression string) ([]token, error) {
 		case ')':
 			tokens = append(tokens, token{typ: tokenRightParen, val: ")"})
 			i++
-		case '+', '-', '*', '/', '^':
+		case '+', '-', '*', '/', '^', '&', '|', '%':
 			// Check if minus is unary
 			if ch == '-' {
 				isUnary := len(tokens) == 0 ||
@@ -114,6 +120,20 @@ func tokenize(expression string) ([]token, error) {
 			}
 			tokens = append(tokens, token{typ: tokenOperator, val: string(ch)})
 			i++
+		case '<':
+			if i+1 < len(runes) && runes[i+1] == '<' {
+				tokens = append(tokens, token{typ: tokenOperator, val: "<<"})
+				i += 2
+			} else {
+				return nil, fmt.Errorf("%w: '%c'", ErrInvalidCharacter, ch)
+			}
+		case '>':
+			if i+1 < len(runes) && runes[i+1] == '>' {
+				tokens = append(tokens, token{typ: tokenOperator, val: ">>"})
+				i += 2
+			} else {
+				return nil, fmt.Errorf("%w: '%c'", ErrInvalidCharacter, ch)
+			}
 		default:
 			return nil, fmt.Errorf("%w: '%c'", ErrInvalidCharacter, ch)
 		}
@@ -286,6 +306,25 @@ func evalRPN(tokens []token) (float64, error) {
 					result = a / b
 				case "^":
 					result = math.Pow(a, b)
+				case "&":
+					result = float64(int64(a) & int64(b))
+				case "|":
+					result = float64(int64(a) | int64(b))
+				case "%":
+					if b == 0 {
+						return 0, ErrDivisionByZero
+					}
+					result = math.Mod(a, b)
+				case "<<":
+					if b < 0 || b > 63 {
+						return 0, ErrShiftOutOfRange
+					}
+					result = float64(int64(a) << uint(int64(b)))
+				case ">>":
+					if b < 0 || b > 63 {
+						return 0, ErrShiftOutOfRange
+					}
+					result = float64(int64(a) >> uint(int64(b)))
 				default:
 					return 0, fmt.Errorf("%w: unknown operator '%s'", ErrMalformedExpression, tok.val)
 				}

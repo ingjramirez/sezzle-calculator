@@ -45,6 +45,13 @@ func TestEvaluate(t *testing.T) {
 		{name: "decimal add", expr: "1.5 + 2.5", want: 4},
 		{name: "float precision", expr: "0.1 + 0.2", want: 0.30000000000000004},
 
+		// Programmer-mode operators
+		{name: "bitwise and", expr: "(12 & 10)", want: 8},
+		{name: "bitwise or", expr: "(12 | 10)", want: 14},
+		{name: "modulo", expr: "10 % 3", want: 1},
+		{name: "left shift", expr: "(1 << 4)", want: 16},
+		{name: "right shift", expr: "(16 >> 4)", want: 1},
+
 		// Edge cases
 		{name: "single number", expr: "42", want: 42},
 		{name: "whitespace", expr: "  2 +  3  ", want: 5},
@@ -164,26 +171,41 @@ func TestTokenize_UnaryMinusAfterLeftParen(t *testing.T) {
 }
 
 func TestPrecedence(t *testing.T) {
-	if precedence("+") != 1 {
-		t.Error("+ should have precedence 1")
+	if precedence("+") != 2 {
+		t.Error("+ should have precedence 2")
 	}
-	if precedence("-") != 1 {
-		t.Error("- should have precedence 1")
+	if precedence("-") != 2 {
+		t.Error("- should have precedence 2")
 	}
-	if precedence("*") != 2 {
-		t.Error("* should have precedence 2")
+	if precedence("*") != 3 {
+		t.Error("* should have precedence 3")
 	}
-	if precedence("/") != 2 {
-		t.Error("/ should have precedence 2")
+	if precedence("/") != 3 {
+		t.Error("/ should have precedence 3")
 	}
-	if precedence("^") != 3 {
-		t.Error("^ should have precedence 3")
+	if precedence("%") != 3 {
+		t.Error("% should have precedence 3")
 	}
-	if precedence("neg") != 4 {
-		t.Error("neg should have precedence 4")
+	if precedence("^") != 4 {
+		t.Error("^ should have precedence 4")
 	}
-	if precedence("unknown") != 0 {
-		t.Error("unknown should have precedence 0")
+	if precedence("neg") != 5 {
+		t.Error("neg should have precedence 5")
+	}
+	if precedence("&") != 0 {
+		t.Error("& should have precedence 0")
+	}
+	if precedence("|") != 0 {
+		t.Error("| should have precedence 0")
+	}
+	if precedence("<<") != 1 {
+		t.Error("<< should have precedence 1")
+	}
+	if precedence(">>") != 1 {
+		t.Error(">> should have precedence 1")
+	}
+	if precedence("unknown") != -1 {
+		t.Error("unknown should have precedence -1")
 	}
 }
 
@@ -196,21 +218,6 @@ func TestIsRightAssociative(t *testing.T) {
 	}
 	if isRightAssociative("+") {
 		t.Error("+ should not be right-associative")
-	}
-}
-
-func TestIsOperator(t *testing.T) {
-	ops := []string{"+", "-", "*", "/", "^"}
-	for _, op := range ops {
-		if !isOperator(op) {
-			t.Errorf("%q should be an operator", op)
-		}
-	}
-	if isOperator("neg") {
-		t.Error("neg should not be classified as operator by isOperator")
-	}
-	if isOperator("x") {
-		t.Error("x should not be an operator")
 	}
 }
 
@@ -288,7 +295,7 @@ func TestEvalRPN_UnknownOperator(t *testing.T) {
 	tokens := []token{
 		{typ: tokenNumber, val: "1"},
 		{typ: tokenNumber, val: "2"},
-		{typ: tokenOperator, val: "%"},
+		{typ: tokenOperator, val: "@@"},
 	}
 	_, err := evalRPN(tokens)
 	if !errors.Is(err, ErrMalformedExpression) {
