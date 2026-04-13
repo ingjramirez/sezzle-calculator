@@ -35,7 +35,7 @@ type EvaluateResponse struct {
 type HistoryEntry struct {
 	ID            int      `json:"id"`
 	Operation     string   `json:"operation"`
-	A             float64  `json:"a"`
+	A             *float64 `json:"a,omitempty"`
 	B             *float64 `json:"b,omitempty"`
 	Result        float64  `json:"result"`
 	ResultDisplay string   `json:"resultDisplay,omitempty"`

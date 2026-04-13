@@ -121,8 +121,8 @@ func TestNewServer_CalculateThenHistory(t *testing.T) {
 	if entries[0].Operation != "multiply" {
 		t.Errorf("operation = %q, want %q", entries[0].Operation, "multiply")
 	}
-	if entries[0].A != 6 {
-		t.Errorf("A = %f, want 6", entries[0].A)
+	if entries[0].A == nil || *entries[0].A != 6 {
+		t.Errorf("A = %v, want 6", entries[0].A)
 	}
 	if entries[0].B == nil || *entries[0].B != 7 {
 		t.Errorf("B = %v, want 7", entries[0].B)
@@ -254,5 +254,56 @@ func TestRun_InvalidAddress(t *testing.T) {
 	err := run(context.Background(), "invalid-address-no-port")
 	if err == nil {
 		t.Error("expected error for invalid address, got nil")
+	}
+}
+
+func TestNewServer_MaxHistoryEnv(t *testing.T) {
+	t.Setenv("MAX_HISTORY", "5")
+
+	srv := newServer()
+
+	// Add 7 entries
+	for i := 0; i < 7; i++ {
+		req := httptest.NewRequest(http.MethodPost, "/api/calculate",
+			strings.NewReader(`{"operation":"add","a":1,"b":2}`))
+		req.Header.Set("Content-Type", "application/json")
+		rr := httptest.NewRecorder()
+		srv.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("calculate status = %d, want %d", rr.Code, http.StatusOK)
+		}
+	}
+
+	// Fetch history — should be capped at 5
+	histReq := httptest.NewRequest(http.MethodGet, "/api/history", nil)
+	histRR := httptest.NewRecorder()
+	srv.ServeHTTP(histRR, histReq)
+
+	var entries []model.HistoryEntry
+	if err := json.NewDecoder(histRR.Body).Decode(&entries); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if len(entries) != 5 {
+		t.Errorf("history len = %d, want 5 (MAX_HISTORY=5)", len(entries))
+	}
+}
+
+func TestNewServer_HealthEndpoint(t *testing.T) {
+	srv := newServer()
+
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rr := httptest.NewRecorder()
+	srv.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	var resp map[string]string
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if resp["status"] != "ok" {
+		t.Errorf("status = %q, want %q", resp["status"], "ok")
 	}
 }

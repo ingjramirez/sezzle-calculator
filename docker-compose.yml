@@ -3,10 +3,19 @@ services:
     build: ./backend
     ports:
       - "8080:8080"
+    environment:
+      - CORS_ORIGIN=*
+      - MAX_HISTORY=50
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   frontend:
     build: ./frontend
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy

@@ -11,7 +11,7 @@ func TestCORS_Preflight(t *testing.T) {
 		t.Error("inner handler should not be called for OPTIONS")
 	})
 
-	handler := CORS(inner)
+	handler := CORS(inner, "*")
 	req := httptest.NewRequest(http.MethodOptions, "/api/calculate", nil)
 	rr := httptest.NewRecorder()
 
@@ -38,7 +38,7 @@ func TestCORS_PassThrough(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler := CORS(inner)
+	handler := CORS(inner, "*")
 	req := httptest.NewRequest(http.MethodPost, "/api/calculate", nil)
 	rr := httptest.NewRecorder()
 

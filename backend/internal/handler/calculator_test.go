@@ -210,8 +210,8 @@ func TestCalculateHandler_SavesHistory(t *testing.T) {
 	if entries[0].Operation != "add" {
 		t.Errorf("Operation = %q, want %q", entries[0].Operation, "add")
 	}
-	if entries[0].A != 2 {
-		t.Errorf("A = %f, want 2", entries[0].A)
+	if entries[0].A == nil || *entries[0].A != 2 {
+		t.Errorf("A = %v, want 2", entries[0].A)
 	}
 	if entries[0].B == nil || *entries[0].B != 3 {
 		t.Errorf("B = %v, want 3", entries[0].B)

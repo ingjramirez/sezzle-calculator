@@ -35,8 +35,8 @@ func TestAdd_UnaryOperation(t *testing.T) {
 	if entry.B != nil {
 		t.Errorf("B should be nil for unary operation")
 	}
-	if entry.A != 16 {
-		t.Errorf("A = %f, want 16", entry.A)
+	if entry.A == nil || *entry.A != 16 {
+		t.Errorf("A = %v, want 16", entry.A)
 	}
 	if entry.Result != 4 {
 		t.Errorf("Result = %f, want 4", entry.Result)
@@ -57,14 +57,14 @@ func TestAdd_MaxSize(t *testing.T) {
 	}
 
 	// Should have entries with A=2, A=3, A=4 (oldest two dropped), newest first
-	if entries[0].A != 4 {
-		t.Errorf("entries[0].A = %f, want 4", entries[0].A)
+	if entries[0].A == nil || *entries[0].A != 4 {
+		t.Errorf("entries[0].A = %v, want 4", entries[0].A)
 	}
-	if entries[1].A != 3 {
-		t.Errorf("entries[1].A = %f, want 3", entries[1].A)
+	if entries[1].A == nil || *entries[1].A != 3 {
+		t.Errorf("entries[1].A = %v, want 3", entries[1].A)
 	}
-	if entries[2].A != 2 {
-		t.Errorf("entries[2].A = %f, want 2", entries[2].A)
+	if entries[2].A == nil || *entries[2].A != 2 {
+		t.Errorf("entries[2].A = %v, want 2", entries[2].A)
 	}
 }
 

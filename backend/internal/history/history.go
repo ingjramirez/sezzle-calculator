@@ -32,7 +32,7 @@ func (s *Store) Add(operation string, a float64, b *float64, result float64, res
 	entry := model.HistoryEntry{
 		ID:            s.nextID,
 		Operation:     operation,
-		A:             a,
+		A:             &a,
 		B:             b,
 		Result:        result,
 		ResultDisplay: resultDisplay,

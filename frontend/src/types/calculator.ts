@@ -43,7 +43,7 @@ export interface ApiError {
 export interface HistoryEntry {
   id: number;
   operation: string;
-  a: number;
+  a?: number;
   b?: number;
   result: number;
   resultDisplay?: string;

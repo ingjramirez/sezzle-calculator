@@ -6,18 +6,36 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/jaime-ramirez/sezzle-calculator/backend/internal/handler"
 	"github.com/jaime-ramirez/sezzle-calculator/backend/internal/history"
 )
 
 func newServer() http.Handler {
-	store := history.NewStore(50)
+	maxHistory := 50
+	if v := os.Getenv("MAX_HISTORY"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			maxHistory = n
+		}
+	}
+	store := history.NewStore(maxHistory)
+
+	corsOrigin := os.Getenv("CORS_ORIGIN")
+	if corsOrigin == "" {
+		corsOrigin = "*"
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/calculate", handler.NewCalculateHandler(store))
 	mux.HandleFunc("/api/evaluate", handler.NewEvaluateHandler(store))
 	mux.HandleFunc("/api/history", handler.NewHistoryHandler(store))
-	return handler.CORS(mux)
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`))
+	})
+	return handler.CORS(mux, corsOrigin)
 }
 
 // run starts the HTTP server on the given address and blocks until the
