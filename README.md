@@ -12,6 +12,7 @@ A full-stack calculator application with a React + TypeScript frontend and Go RE
 - **Big Number Support** — Factorials beyond 170 use big.Int with scientific notation display (e.g., 200! = 7.88657×10^374)
 - **Base Conversion** — Programmer mode displays values in hex (0x), octal (0o), binary (0b), or decimal
 - **Unified Grid Layout** — Scientific and programmer buttons appear as extra left columns in a single grid that widens horizontally
+- **Keyboard Support** — Type digits, operators, parentheses, Enter for equals, Escape to clear
 - **Input Validation** — Handles division by zero, mismatched parentheses, invalid input, and edge cases
 - **Responsive Design** — Works on desktop and mobile
 - **Dark Theme** — Clean, modern calculator aesthetic with distinct color themes per mode (indigo for scientific, teal for programmer)
@@ -262,7 +263,6 @@ npm run test:coverage # run with coverage report
 
 ## Future Enhancements
 
-- **Keyboard Support** — Number keys, Enter for equals, Escape for clear
 - **Hex Digit Input** — A-F buttons in programmer mode for hex input
 - **Degree/Radian Toggle** — Switch between degree and radian mode for trig functions
 - **Persistent History** — Save history to database or localStorage

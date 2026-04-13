@@ -66,6 +66,40 @@ export default function Calculator() {
     }
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= '0' && e.key <= '9') {
+        inputDigit(e.key);
+      } else if (e.key === '.') {
+        inputDecimal();
+      } else if (e.key === '+') {
+        setOperation('add');
+      } else if (e.key === '-') {
+        setOperation('subtract');
+      } else if (e.key === '*') {
+        setOperation('multiply');
+      } else if (e.key === '/') {
+        e.preventDefault();
+        setOperation('divide');
+      } else if (e.key === '(') {
+        inputParen('(');
+      } else if (e.key === ')') {
+        inputParen(')');
+      } else if (e.key === 'Enter' || e.key === '=') {
+        e.preventDefault();
+        handleCalculate();
+      } else if (e.key === 'Escape') {
+        clear();
+      } else if (e.key === 'Backspace') {
+        clear();
+      } else if (e.key === '^') {
+        setOperation('power');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [inputDigit, inputDecimal, setOperation, inputParen, handleCalculate, clear]);
+
   const widthClass = mode === 'scientific' ? 'w-[480px]' : mode === 'programmer' ? 'w-[420px]' : 'w-80';
 
   const renderButtonGrid = () => {
