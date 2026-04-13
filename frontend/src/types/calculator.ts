@@ -34,3 +34,12 @@ export interface ApiResponse {
 export interface ApiError {
   error: string;
 }
+
+export interface HistoryEntry {
+  id: number;
+  operation: string;
+  a: number;
+  b?: number;
+  result: number;
+  timestamp: string;
+}

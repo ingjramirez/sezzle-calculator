@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import Display from './Display';
 
 describe('Display', () => {
@@ -64,5 +65,55 @@ describe('Display', () => {
   it('truncates decimal for non-base-10 display', () => {
     render(<Display expression="" value="10.7" base={16} />);
     expect(screen.getByText('0xA')).toBeInTheDocument();
+  });
+
+  it('renders history entries when provided', () => {
+    const history = [
+      { id: 1, operation: 'add', a: 1, b: 2, result: 3, timestamp: new Date().toISOString() },
+    ];
+    render(<Display expression="" value="3" history={history} />);
+    expect(screen.getByText('1 + 2 = 3')).toBeInTheDocument();
+  });
+
+  it('calls onHistorySelect when a history entry is clicked', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const history = [
+      { id: 1, operation: 'add', a: 1, b: 2, result: 3, timestamp: new Date().toISOString() },
+    ];
+    render(<Display expression="" value="3" history={history} onHistorySelect={onSelect} />);
+    await user.click(screen.getByText('1 + 2 = 3'));
+    expect(onSelect).toHaveBeenCalledWith(3);
+  });
+
+  it('shows Clear History button when history exists and calls onClearHistory', async () => {
+    const user = userEvent.setup();
+    const onClear = vi.fn();
+    const history = [
+      { id: 1, operation: 'add', a: 1, b: 2, result: 3, timestamp: new Date().toISOString() },
+    ];
+    render(<Display expression="" value="3" history={history} onClearHistory={onClear} />);
+    const clearBtn = screen.getByText('Clear History');
+    expect(clearBtn).toBeInTheDocument();
+    await user.click(clearBtn);
+    expect(onClear).toHaveBeenCalled();
+  });
+
+  it('does not show Clear History when history is empty', () => {
+    render(<Display expression="" value="0" history={[]} />);
+    expect(screen.queryByText('Clear History')).not.toBeInTheDocument();
+  });
+
+  it('shows newest history entry at the bottom', () => {
+    // API returns newest first: [id=2, id=1]
+    const history = [
+      { id: 2, operation: 'multiply', a: 3, b: 4, result: 12, timestamp: new Date().toISOString() },
+      { id: 1, operation: 'add', a: 1, b: 2, result: 3, timestamp: new Date().toISOString() },
+    ];
+    render(<Display expression="" value="12" history={history} />);
+    const items = screen.getAllByRole('listitem');
+    // Reversed for display: oldest (id=1) at top, newest (id=2) at bottom
+    expect(items[0]).toHaveTextContent('1 + 2 = 3');
+    expect(items[1]).toHaveTextContent('3 \u00d7 4 = 12');
   });
 });

@@ -166,6 +166,10 @@ export function useCalculator() {
     dispatch({ type: 'SET_CONSTANT', value: String(value) });
   }, []);
 
+  const loadResult = useCallback((result: number) => {
+    dispatch({ type: 'CALCULATE', result });
+  }, []);
+
   return {
     state,
     inputDigit,
@@ -177,5 +181,6 @@ export function useCalculator() {
     percentage,
     unaryOperation,
     setConstant,
+    loadResult,
   };
 }

@@ -17,3 +17,13 @@ type CalculateResponse struct {
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
+
+// HistoryEntry represents a single calculation stored in history.
+type HistoryEntry struct {
+	ID        int      `json:"id"`
+	Operation string   `json:"operation"`
+	A         float64  `json:"a"`
+	B         *float64 `json:"b,omitempty"`
+	Result    float64  `json:"result"`
+	Timestamp string   `json:"timestamp"`
+}

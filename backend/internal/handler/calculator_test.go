@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/jaime-ramirez/sezzle-calculator/backend/internal/history"
 	"github.com/jaime-ramirez/sezzle-calculator/backend/internal/model"
 )
 
@@ -135,11 +136,14 @@ func TestCalculateHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			store := history.NewStore(50)
+			handler := NewCalculateHandler(store)
+
 			req := httptest.NewRequest(tt.method, "/api/calculate", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			rr := httptest.NewRecorder()
 
-			CalculateHandler(rr, req)
+			handler.ServeHTTP(rr, req)
 
 			if rr.Code != tt.wantStatus {
 				t.Errorf("status = %d, want %d", rr.Code, tt.wantStatus)
@@ -165,6 +169,81 @@ func TestCalculateHandler(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestCalculateHandler_SavesHistory(t *testing.T) {
+	store := history.NewStore(50)
+	handler := NewCalculateHandler(store)
+
+	// Perform a binary calculation
+	req := httptest.NewRequest(http.MethodPost, "/api/calculate",
+		bytes.NewBufferString(`{"operation":"add","a":2,"b":3}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	entries := store.List()
+	if len(entries) != 1 {
+		t.Fatalf("history len = %d, want 1", len(entries))
+	}
+
+	if entries[0].Operation != "add" {
+		t.Errorf("Operation = %q, want %q", entries[0].Operation, "add")
+	}
+	if entries[0].A != 2 {
+		t.Errorf("A = %f, want 2", entries[0].A)
+	}
+	if entries[0].B == nil || *entries[0].B != 3 {
+		t.Errorf("B = %v, want 3", entries[0].B)
+	}
+	if entries[0].Result != 5 {
+		t.Errorf("Result = %f, want 5", entries[0].Result)
+	}
+}
+
+func TestCalculateHandler_UnaryNoB(t *testing.T) {
+	store := history.NewStore(50)
+	handler := NewCalculateHandler(store)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/calculate",
+		bytes.NewBufferString(`{"operation":"sqrt","a":16}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	entries := store.List()
+	if len(entries) != 1 {
+		t.Fatalf("history len = %d, want 1", len(entries))
+	}
+
+	if entries[0].B != nil {
+		t.Errorf("B should be nil for unary operation, got %v", entries[0].B)
+	}
+}
+
+func TestCalculateHandler_ErrorNotSaved(t *testing.T) {
+	store := history.NewStore(50)
+	handler := NewCalculateHandler(store)
+
+	// Division by zero should not be saved
+	req := httptest.NewRequest(http.MethodPost, "/api/calculate",
+		bytes.NewBufferString(`{"operation":"divide","a":10,"b":0}`))
+	req.Header.Set("Content-Type", "application/json")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	entries := store.List()
+	if len(entries) != 0 {
+		t.Errorf("history len = %d, want 0 (errors should not be saved)", len(entries))
 	}
 }
 

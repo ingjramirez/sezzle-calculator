@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/jaime-ramirez/sezzle-calculator/backend/internal/model"
 )
 
 func TestNewServer_Calculate(t *testing.T) {
@@ -52,6 +54,105 @@ func TestNewServer_CORS(t *testing.T) {
 	}
 	if got := rr.Header().Get("Access-Control-Allow-Origin"); got != "*" {
 		t.Errorf("Access-Control-Allow-Origin = %q, want %q", got, "*")
+	}
+}
+
+func TestNewServer_CalculateThenHistory(t *testing.T) {
+	srv := newServer()
+
+	// Perform a calculation
+	calcReq := httptest.NewRequest(http.MethodPost, "/api/calculate",
+		strings.NewReader(`{"operation":"multiply","a":6,"b":7}`))
+	calcReq.Header.Set("Content-Type", "application/json")
+	calcRR := httptest.NewRecorder()
+	srv.ServeHTTP(calcRR, calcReq)
+
+	if calcRR.Code != http.StatusOK {
+		t.Fatalf("calculate status = %d, want %d", calcRR.Code, http.StatusOK)
+	}
+
+	// Fetch history
+	histReq := httptest.NewRequest(http.MethodGet, "/api/history", nil)
+	histRR := httptest.NewRecorder()
+	srv.ServeHTTP(histRR, histReq)
+
+	if histRR.Code != http.StatusOK {
+		t.Fatalf("history status = %d, want %d", histRR.Code, http.StatusOK)
+	}
+
+	var entries []model.HistoryEntry
+	if err := json.NewDecoder(histRR.Body).Decode(&entries); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+
+	if len(entries) != 1 {
+		t.Fatalf("history len = %d, want 1", len(entries))
+	}
+
+	if entries[0].Operation != "multiply" {
+		t.Errorf("operation = %q, want %q", entries[0].Operation, "multiply")
+	}
+	if entries[0].A != 6 {
+		t.Errorf("A = %f, want 6", entries[0].A)
+	}
+	if entries[0].B == nil || *entries[0].B != 7 {
+		t.Errorf("B = %v, want 7", entries[0].B)
+	}
+	if entries[0].Result != 42 {
+		t.Errorf("Result = %f, want 42", entries[0].Result)
+	}
+}
+
+func TestNewServer_HistoryEmpty(t *testing.T) {
+	srv := newServer()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/history", nil)
+	rr := httptest.NewRecorder()
+	srv.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusOK)
+	}
+
+	var entries []model.HistoryEntry
+	if err := json.NewDecoder(rr.Body).Decode(&entries); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("history should be empty, got %d entries", len(entries))
+	}
+}
+
+func TestNewServer_DeleteHistory(t *testing.T) {
+	srv := newServer()
+
+	// Add an entry
+	calcReq := httptest.NewRequest(http.MethodPost, "/api/calculate",
+		strings.NewReader(`{"operation":"add","a":1,"b":2}`))
+	calcReq.Header.Set("Content-Type", "application/json")
+	calcRR := httptest.NewRecorder()
+	srv.ServeHTTP(calcRR, calcReq)
+
+	// Delete history
+	delReq := httptest.NewRequest(http.MethodDelete, "/api/history", nil)
+	delRR := httptest.NewRecorder()
+	srv.ServeHTTP(delRR, delReq)
+
+	if delRR.Code != http.StatusOK {
+		t.Fatalf("delete status = %d, want %d", delRR.Code, http.StatusOK)
+	}
+
+	// Verify empty
+	histReq := httptest.NewRequest(http.MethodGet, "/api/history", nil)
+	histRR := httptest.NewRecorder()
+	srv.ServeHTTP(histRR, histReq)
+
+	var entries []model.HistoryEntry
+	if err := json.NewDecoder(histRR.Body).Decode(&entries); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("history should be empty after DELETE, got %d entries", len(entries))
 	}
 }
 

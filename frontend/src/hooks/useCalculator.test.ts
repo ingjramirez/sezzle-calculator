@@ -324,6 +324,20 @@ describe('useCalculator', () => {
       expect(result.current.state.waitingForOperand).toBe(false);
     });
   });
+
+  describe('loadResult', () => {
+    it('sets display to the given result and clears state', () => {
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.setOperation('add'));
+      act(() => result.current.loadResult(42));
+      expect(result.current.state.display).toBe('42');
+      expect(result.current.state.previousValue).toBeNull();
+      expect(result.current.state.operation).toBeNull();
+      expect(result.current.state.waitingForOperand).toBe(true);
+      expect(result.current.state.expression).toBe('');
+    });
+  });
 });
 
 describe('reducer (direct)', () => {

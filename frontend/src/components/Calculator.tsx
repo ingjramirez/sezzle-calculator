@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
-import type { CalculatorMode } from '../types/calculator';
+import { useState, useCallback, useEffect } from 'react';
+import type { CalculatorMode, HistoryEntry } from '../types/calculator';
 import { useCalculator } from '../hooks/useCalculator';
+import { getHistory, clearHistory as apiClearHistory } from '../services/api';
 import ModeSelector from './ModeSelector';
 import Display from './Display';
 import ButtonGrid from './ButtonGrid';
@@ -10,6 +11,7 @@ import ProgrammerButtonGrid from './ProgrammerButtonGrid';
 export default function Calculator() {
   const [mode, setMode] = useState<CalculatorMode>('basic');
   const [base, setBase] = useState(10);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const {
     state,
     inputDigit,
@@ -21,7 +23,40 @@ export default function Calculator() {
     percentage,
     unaryOperation,
     setConstant,
+    loadResult,
   } = useCalculator();
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const entries = await getHistory();
+      setHistory(entries);
+    } catch {
+      // silently ignore history fetch errors
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  const handleCalculate = useCallback(async () => {
+    await calculate();
+    await fetchHistory();
+  }, [calculate, fetchHistory]);
+
+  const handleUnaryOperation = useCallback(async (operation: string) => {
+    await unaryOperation(operation);
+    await fetchHistory();
+  }, [unaryOperation, fetchHistory]);
+
+  const handleClearHistory = useCallback(async () => {
+    try {
+      await apiClearHistory();
+      setHistory([]);
+    } catch {
+      // silently ignore clear errors
+    }
+  }, []);
 
   const handleModeChange = useCallback((newMode: CalculatorMode) => {
     setMode(newMode);
@@ -38,11 +73,11 @@ export default function Calculator() {
             inputDigit={inputDigit}
             inputDecimal={inputDecimal}
             setOperation={setOperation}
-            calculate={calculate}
+            calculate={handleCalculate}
             clear={clear}
             toggleSign={toggleSign}
             percentage={percentage}
-            unaryOperation={unaryOperation}
+            unaryOperation={handleUnaryOperation}
             setConstant={setConstant}
           />
         );
@@ -52,11 +87,11 @@ export default function Calculator() {
             inputDigit={inputDigit}
             inputDecimal={inputDecimal}
             setOperation={setOperation}
-            calculate={calculate}
+            calculate={handleCalculate}
             clear={clear}
             toggleSign={toggleSign}
             percentage={percentage}
-            unaryOperation={unaryOperation}
+            unaryOperation={handleUnaryOperation}
             setConstant={setConstant}
             base={base}
             onBaseChange={setBase}
@@ -68,7 +103,7 @@ export default function Calculator() {
             inputDigit={inputDigit}
             inputDecimal={inputDecimal}
             setOperation={setOperation}
-            calculate={calculate}
+            calculate={handleCalculate}
             clear={clear}
             toggleSign={toggleSign}
             percentage={percentage}
@@ -84,6 +119,9 @@ export default function Calculator() {
         expression={state.expression}
         value={state.display}
         base={mode === 'programmer' ? base : undefined}
+        history={history}
+        onHistorySelect={loadResult}
+        onClearHistory={handleClearHistory}
       />
       {renderButtonGrid()}
     </div>

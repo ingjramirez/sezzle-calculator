@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { calculate, calculateUnary } from './api';
+import { calculate, calculateUnary, getHistory, clearHistory } from './api';
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -90,6 +90,90 @@ describe('calculateUnary', () => {
     global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
 
     await expect(calculateUnary('sqrt', 9)).rejects.toThrow(
+      'Network error: unable to reach the server',
+    );
+  });
+});
+
+describe('getHistory', () => {
+  it('returns array of history entries on success', async () => {
+    const entries = [
+      { id: 1, operation: 'add', a: 1, b: 2, result: 3, timestamp: '2024-01-01T00:00:00Z' },
+    ];
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(entries),
+    });
+
+    const result = await getHistory();
+    expect(result).toEqual(entries);
+    expect(global.fetch).toHaveBeenCalledWith('/api/history');
+  });
+
+  it('throws with error message on server error', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ error: 'internal error' }),
+    });
+
+    await expect(getHistory()).rejects.toThrow('internal error');
+  });
+
+  it('throws with fallback message when server error has no error field', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ error: '' }),
+    });
+
+    await expect(getHistory()).rejects.toThrow('Server error: 500');
+  });
+
+  it('throws with network error on fetch failure', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await expect(getHistory()).rejects.toThrow(
+      'Network error: unable to reach the server',
+    );
+  });
+});
+
+describe('clearHistory', () => {
+  it('completes successfully on ok response', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ status: 'cleared' }),
+    });
+
+    await expect(clearHistory()).resolves.toBeUndefined();
+    expect(global.fetch).toHaveBeenCalledWith('/api/history', { method: 'DELETE' });
+  });
+
+  it('throws with error message on server error', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ error: 'cannot clear' }),
+    });
+
+    await expect(clearHistory()).rejects.toThrow('cannot clear');
+  });
+
+  it('throws with fallback message when server error has no error field', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: () => Promise.resolve({ error: '' }),
+    });
+
+    await expect(clearHistory()).rejects.toThrow('Server error: 503');
+  });
+
+  it('throws with network error on fetch failure', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await expect(clearHistory()).rejects.toThrow(
       'Network error: unable to reach the server',
     );
   });

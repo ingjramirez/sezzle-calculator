@@ -1,4 +1,4 @@
-import type { ApiResponse, ApiError } from '../types/calculator';
+import type { ApiResponse, ApiError, HistoryEntry } from '../types/calculator';
 
 export async function calculate(
   operation: string,
@@ -49,4 +49,36 @@ export async function calculateUnary(
 
   const data = (await response.json()) as ApiResponse;
   return data.result;
+}
+
+export async function getHistory(): Promise<HistoryEntry[]> {
+  let response: Response;
+
+  try {
+    response = await fetch('/api/history');
+  } catch {
+    throw new Error('Network error: unable to reach the server');
+  }
+
+  if (!response.ok) {
+    const body = (await response.json()) as ApiError;
+    throw new Error(body.error || `Server error: ${response.status}`);
+  }
+
+  return (await response.json()) as HistoryEntry[];
+}
+
+export async function clearHistory(): Promise<void> {
+  let response: Response;
+
+  try {
+    response = await fetch('/api/history', { method: 'DELETE' });
+  } catch {
+    throw new Error('Network error: unable to reach the server');
+  }
+
+  if (!response.ok) {
+    const body = (await response.json()) as ApiError;
+    throw new Error(body.error || `Server error: ${response.status}`);
+  }
 }
