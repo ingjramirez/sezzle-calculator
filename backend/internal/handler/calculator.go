@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/jaime-ramirez/sezzle-calculator/backend/internal/engine"
@@ -44,16 +43,7 @@ func CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		if errors.Is(err, engine.ErrDivisionByZero) ||
-			errors.Is(err, engine.ErrUnknownOperation) ||
-			errors.Is(err, engine.ErrNegativeSquareRoot) ||
-			errors.Is(err, engine.ErrInvalidLogarithm) ||
-			errors.Is(err, engine.ErrInvalidFactorial) ||
-			errors.Is(err, engine.ErrInvalidShift) {
-			writeError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		writeError(w, http.StatusInternalServerError, "calculation failed")
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

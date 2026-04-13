@@ -10,7 +10,7 @@ const initialState: CalculatorState = {
   expression: '',
 };
 
-function reducer(state: CalculatorState, action: CalculatorAction): CalculatorState {
+export function reducer(state: CalculatorState, action: CalculatorAction): CalculatorState {
   switch (action.type) {
     case 'INPUT_DIGIT': {
       if (state.waitingForOperand) {

@@ -16,19 +16,15 @@ export default function ModeSelector({ activeMode, onModeChange }: ModeSelectorP
     <div className="flex bg-[#1c1c1e] rounded-t-2xl overflow-hidden">
       {modes.map(({ key, label }) => {
         const isActive = key === activeMode;
-        const isDisabled = false;
 
         return (
           <button
             key={key}
-            onClick={() => !isDisabled && onModeChange(key)}
-            disabled={isDisabled}
+            onClick={() => onModeChange(key)}
             className={`flex-1 py-2.5 text-sm font-medium transition-colors duration-150 cursor-pointer
               ${isActive
                 ? 'text-white border-b-2 border-[#ff9500]'
-                : isDisabled
-                  ? 'text-[#48484a] cursor-not-allowed border-b-2 border-transparent'
-                  : 'text-[#a1a1a6] border-b-2 border-transparent hover:text-white'
+                : 'text-[#a1a1a6] border-b-2 border-transparent hover:text-white'
               }`}
           >
             {label}
