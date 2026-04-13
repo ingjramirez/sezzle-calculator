@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"math"
+	"strings"
 	"testing"
 )
 
@@ -155,9 +156,11 @@ func TestCalculateUnary(t *testing.T) {
 		{name: "factorial 1", operation: "factorial", a: 1, want: 1},
 		{name: "factorial 5", operation: "factorial", a: 5, want: 120},
 		{name: "factorial 10", operation: "factorial", a: 10, want: 3628800},
+		{name: "factorial 171 returns +Inf", operation: "factorial", a: 171, want: math.Inf(1)},
+		{name: "factorial 200 returns +Inf", operation: "factorial", a: 200, want: math.Inf(1)},
 		{name: "factorial negative", operation: "factorial", a: -1, wantErr: ErrInvalidFactorial},
 		{name: "factorial non-integer", operation: "factorial", a: 3.5, wantErr: ErrInvalidFactorial},
-		{name: "factorial 171 overflow", operation: "factorial", a: 171, wantErr: ErrInvalidFactorial},
+		{name: "factorial exceeds 10000", operation: "factorial", a: 10001, wantErr: ErrInvalidFactorial},
 
 		// square
 		{name: "square 5", operation: "square", a: 5, want: 25},
@@ -210,9 +213,80 @@ func TestCalculateUnary(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if math.Abs(got-tt.want) > 1e-9 {
+			if math.IsInf(tt.want, 0) {
+				if !math.IsInf(got, 0) {
+					t.Errorf("CalculateUnary(%s, %f) = %f, want +Inf", tt.operation, tt.a, got)
+				}
+			} else if math.Abs(got-tt.want) > 1e-9 {
 				t.Errorf("CalculateUnary(%s, %f) = %f, want %f", tt.operation, tt.a, got, tt.want)
 			}
 		})
 	}
 }
+
+func TestFactorialBig(t *testing.T) {
+	tests := []struct {
+		name    string
+		n       int64
+		wantNil bool
+		want    string
+	}{
+		{name: "FactorialBig(0)", n: 0, want: "1"},
+		{name: "FactorialBig(1)", n: 1, want: "1"},
+		{name: "FactorialBig(5)", n: 5, want: "120"},
+		{name: "FactorialBig(10)", n: 10, want: "3628800"},
+		{name: "FactorialBig(171) not nil", n: 171},
+		{name: "FactorialBig(-1) returns nil", n: -1, wantNil: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := FactorialBig(tt.n)
+			if tt.wantNil {
+				if got != nil {
+					t.Errorf("FactorialBig(%d) = %v, want nil", tt.n, got)
+				}
+				return
+			}
+			if got == nil {
+				t.Fatalf("FactorialBig(%d) = nil, want non-nil", tt.n)
+			}
+			if tt.want != "" && got.String() != tt.want {
+				t.Errorf("FactorialBig(%d) = %s, want %s", tt.n, got.String(), tt.want)
+			}
+		})
+	}
+}
+
+func TestFormatBigNumber(t *testing.T) {
+	tests := []struct {
+		name string
+		n    int64
+		want string
+	}{
+		{name: "small number 120", n: 5, want: "120"},
+		{name: "huge number 1000!", n: 1000},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			big := FactorialBig(tt.n)
+			got := FormatBigNumber(big)
+			if tt.want != "" {
+				if got != tt.want {
+					t.Errorf("FormatBigNumber(FactorialBig(%d)) = %q, want %q", tt.n, got, tt.want)
+				}
+			} else {
+				// For huge numbers, just verify it contains scientific notation
+				if len(got) < 5 {
+					t.Errorf("FormatBigNumber(FactorialBig(%d)) = %q, expected scientific notation", tt.n, got)
+				}
+				// Should contain the ×10^ pattern
+				if !strings.Contains(got, "×10^") {
+					t.Errorf("FormatBigNumber(FactorialBig(%d)) = %q, expected to contain '×10^'", tt.n, got)
+				}
+			}
+		})
+	}
+}
+

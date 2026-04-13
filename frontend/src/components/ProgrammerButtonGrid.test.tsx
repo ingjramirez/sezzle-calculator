@@ -164,11 +164,11 @@ describe('ProgrammerButtonGrid', () => {
     }
   });
 
-  it('CLR calls clear', async () => {
+  it('C calls clear', async () => {
     const user = userEvent.setup();
     const props = createProps();
     render(<ProgrammerButtonGrid {...props} />);
-    await user.click(screen.getByText('CLR'));
+    await user.click(screen.getByText('C'));
     expect(props.clear).toHaveBeenCalledTimes(1);
   });
 

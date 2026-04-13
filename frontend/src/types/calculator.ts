@@ -8,13 +8,14 @@ export interface CalculatorState {
   expression: string;
   expressionTokens: string[];
   openParens: number;
+  resultDisplay: string;
 }
 
 export type CalculatorAction =
   | { type: 'INPUT_DIGIT'; digit: string }
   | { type: 'INPUT_DECIMAL' }
   | { type: 'SET_OPERATION'; operation: string }
-  | { type: 'CALCULATE'; result: number }
+  | { type: 'CALCULATE'; result: number; resultDisplay?: string }
   | { type: 'CLEAR' }
   | { type: 'TOGGLE_SIGN' }
   | { type: 'PERCENTAGE' }
@@ -31,6 +32,7 @@ export interface ApiRequest {
 
 export interface ApiResponse {
   result: number;
+  resultDisplay?: string;
   operation: string;
 }
 
@@ -44,6 +46,7 @@ export interface HistoryEntry {
   a: number;
   b?: number;
   result: number;
+  resultDisplay?: string;
   timestamp: string;
   expression?: string;
 }

@@ -125,6 +125,18 @@ describe('formatEntry', () => {
   it('uses default format for unknown unary operations', () => {
     expect(formatEntry(makeEntry({ operation: 'unknown', a: 5, b: undefined, result: 10 }))).toBe('unknown(5) = 10');
   });
+
+  it('uses resultDisplay instead of result when provided', () => {
+    expect(formatEntry(makeEntry({ operation: 'factorial', a: 1000, b: undefined, result: Infinity, resultDisplay: '4.02387×10^2567' }))).toBe('1000! = 4.02387×10^2567');
+  });
+
+  it('uses resultDisplay for binary operations when provided', () => {
+    expect(formatEntry(makeEntry({ operation: 'power', a: 10, b: 1000, result: Infinity, resultDisplay: '1×10^1000' }))).toBe('10 ^ 1000 = 1×10^1000');
+  });
+
+  it('uses resultDisplay for expression-based entries when provided', () => {
+    expect(formatEntry(makeEntry({ expression: '10 ^ 1000', result: Infinity, resultDisplay: '1×10^1000' }))).toBe('10 ^ 1000 = 1×10^1000');
+  });
 });
 
 describe('formatTimestamp', () => {

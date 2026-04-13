@@ -4,8 +4,8 @@ import App from './App';
 
 // Mock the api so useCalculator never does real fetches
 vi.mock('./services/api', () => ({
-  calculate: vi.fn().mockResolvedValue(0),
-  calculateUnary: vi.fn().mockResolvedValue(0),
+  calculate: vi.fn().mockResolvedValue({ result: 0 }),
+  calculateUnary: vi.fn().mockResolvedValue({ result: 0 }),
 }));
 
 describe('App', () => {

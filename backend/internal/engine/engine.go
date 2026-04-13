@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
+	"strconv"
 )
 
 // ErrDivisionByZero is returned when dividing by zero.
@@ -117,15 +119,13 @@ var unaryOperations = map[string]unaryFunc{
 		if a != math.Trunc(a) {
 			return 0, fmt.Errorf("%w: non-integer", ErrInvalidFactorial)
 		}
-		n := int(a)
-		if n > 170 {
-			return 0, fmt.Errorf("%w: exceeds maximum (170)", ErrInvalidFactorial)
+		n := int64(a)
+		if n > 10000 {
+			return 0, fmt.Errorf("%w: exceeds maximum (10000)", ErrInvalidFactorial)
 		}
-		result := 1.0
-		for i := 2; i <= n; i++ {
-			result *= float64(i)
-		}
-		return result, nil
+		result := new(big.Int).MulRange(1, n)
+		f, _ := new(big.Float).SetInt(result).Float64()
+		return f, nil // f will be +Inf for n > 170, which is fine
 	},
 	"square": func(a float64) (float64, error) {
 		return a * a, nil
@@ -163,4 +163,30 @@ func CalculateUnary(operation string, a float64) (float64, error) {
 		return 0, fmt.Errorf("%w: %s", ErrUnknownOperation, operation)
 	}
 	return fn(a)
+}
+
+// FactorialBig computes n! and returns the result as a big.Int.
+// Returns nil if n is negative or non-integer.
+func FactorialBig(n int64) *big.Int {
+	if n < 0 {
+		return nil
+	}
+	if n == 0 {
+		return big.NewInt(1)
+	}
+	return new(big.Int).MulRange(1, n)
+}
+
+// FormatBigNumber formats a big.Int as scientific notation if it's too large for normal display.
+// Returns something like "4.02×10^2567" for huge numbers, or the plain number string for small ones.
+func FormatBigNumber(n *big.Int) string {
+	s := n.String()
+	if len(s) <= 15 {
+		return s
+	}
+	// Scientific notation: take first few significant digits
+	exp := len(s) - 1
+	// Format as "d.ddddd×10^exp"
+	mantissa := s[0:1] + "." + s[1:6]
+	return mantissa + "×10^" + strconv.Itoa(exp)
 }

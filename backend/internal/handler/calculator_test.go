@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/jaime-ramirez/sezzle-calculator/backend/internal/history"
@@ -13,12 +14,13 @@ import (
 
 func TestCalculateHandler(t *testing.T) {
 	tests := []struct {
-		name       string
-		method     string
-		body       string
-		wantStatus int
-		wantResult *float64
-		wantError  string
+		name              string
+		method            string
+		body              string
+		wantStatus        int
+		wantResult        *float64
+		wantResultDisplay string
+		wantError         string
 	}{
 		{
 			name:       "add",
@@ -112,6 +114,14 @@ func TestCalculateHandler(t *testing.T) {
 			wantResult: floatPtr(-1),
 		},
 		{
+			name:              "factorial 171 returns display string",
+			method:            http.MethodPost,
+			body:              `{"operation":"factorial","a":171}`,
+			wantStatus:        http.StatusOK,
+			wantResult:        floatPtr(0),
+			wantResultDisplay: "×10^",
+		},
+		{
 			name:       "invalid JSON",
 			method:     http.MethodPost,
 			body:       `{invalid}`,
@@ -156,6 +166,11 @@ func TestCalculateHandler(t *testing.T) {
 				}
 				if resp.Result != *tt.wantResult {
 					t.Errorf("result = %f, want %f", resp.Result, *tt.wantResult)
+				}
+				if tt.wantResultDisplay != "" {
+					if !strings.Contains(resp.ResultDisplay, tt.wantResultDisplay) {
+						t.Errorf("resultDisplay = %q, want it to contain %q", resp.ResultDisplay, tt.wantResultDisplay)
+					}
 				}
 			}
 

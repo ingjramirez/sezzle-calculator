@@ -11,6 +11,9 @@ describe('calculator types', () => {
       operation: null,
       waitingForOperand: false,
       expression: '',
+      expressionTokens: [],
+      openParens: 0,
+      resultDisplay: '',
     };
     const _action: CalculatorAction = { type: 'CLEAR' };
     const _request: ApiRequest = { operation: 'add', a: 1, b: 2 };

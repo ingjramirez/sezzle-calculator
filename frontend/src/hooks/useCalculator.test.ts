@@ -30,6 +30,7 @@ describe('useCalculator', () => {
       expression: '',
       expressionTokens: [],
       openParens: 0,
+      resultDisplay: '',
     });
   });
 
@@ -226,7 +227,7 @@ describe('useCalculator', () => {
 
   describe('calculate', () => {
     it('calls API and updates display with result', async () => {
-      mockedApiCalculate.mockResolvedValue(13);
+      mockedApiCalculate.mockResolvedValue({ result: 13 });
       const { result } = renderHook(() => useCalculator());
       act(() => result.current.inputDigit('5'));
       act(() => result.current.setOperation('add'));
@@ -239,6 +240,19 @@ describe('useCalculator', () => {
       expect(result.current.state.previousValue).toBeNull();
       expect(result.current.state.operation).toBeNull();
       expect(result.current.state.expression).toBe('');
+    });
+
+    it('uses resultDisplay for display when provided', async () => {
+      mockedApiCalculate.mockResolvedValue({ result: Infinity, resultDisplay: '4.02387\u00d710^2567' });
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('5'));
+      act(() => result.current.setOperation('add'));
+      act(() => result.current.inputDigit('8'));
+      await act(async () => {
+        await result.current.calculate();
+      });
+      expect(result.current.state.display).toBe('4.02387\u00d710^2567');
+      expect(result.current.state.resultDisplay).toBe('4.02387\u00d710^2567');
     });
 
     it('does nothing when no previousValue or operation', async () => {
@@ -275,7 +289,7 @@ describe('useCalculator', () => {
     });
 
     it('uses evaluate API when expression contains parentheses', async () => {
-      mockedApiEvaluate.mockResolvedValue(14);
+      mockedApiEvaluate.mockResolvedValue({ result: 14 });
       const { result } = renderHook(() => useCalculator());
       act(() => result.current.inputParen('('));
       act(() => result.current.inputDigit('2'));
@@ -314,7 +328,7 @@ describe('useCalculator', () => {
     });
 
     it('resets expression tokens after successful calculation', async () => {
-      mockedApiCalculate.mockResolvedValue(10);
+      mockedApiCalculate.mockResolvedValue({ result: 10 });
       const { result } = renderHook(() => useCalculator());
       act(() => result.current.inputDigit('5'));
       act(() => result.current.setOperation('add'));
@@ -341,6 +355,7 @@ describe('useCalculator', () => {
         expression: '',
         expressionTokens: [],
         openParens: 0,
+        resultDisplay: '',
       });
     });
 
@@ -405,7 +420,7 @@ describe('useCalculator', () => {
 
   describe('unaryOperation', () => {
     it('calls calculateUnary API and dispatches result', async () => {
-      mockedApiCalculateUnary.mockResolvedValue(3);
+      mockedApiCalculateUnary.mockResolvedValue({ result: 3 });
       const { result } = renderHook(() => useCalculator());
       act(() => result.current.inputDigit('9'));
       await act(async () => {
@@ -413,6 +428,17 @@ describe('useCalculator', () => {
       });
       expect(mockedApiCalculateUnary).toHaveBeenCalledWith('sqrt', 9);
       expect(result.current.state.display).toBe('3');
+    });
+
+    it('uses resultDisplay for display when provided by unary API', async () => {
+      mockedApiCalculateUnary.mockResolvedValue({ result: Infinity, resultDisplay: '4.02387×10^2567' });
+      const { result } = renderHook(() => useCalculator());
+      act(() => result.current.inputDigit('9'));
+      await act(async () => {
+        await result.current.unaryOperation('factorial');
+      });
+      expect(result.current.state.display).toBe('4.02387×10^2567');
+      expect(result.current.state.resultDisplay).toBe('4.02387×10^2567');
     });
 
     it('handles API errors with Error instance', async () => {
@@ -516,6 +542,7 @@ describe('reducer (direct)', () => {
     expression: '',
     expressionTokens: [],
     openParens: 0,
+    resultDisplay: '',
   };
 
   it('UNARY_OPERATION action returns state unchanged (no-op)', () => {

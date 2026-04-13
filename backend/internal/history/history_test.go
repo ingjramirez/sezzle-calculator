@@ -9,10 +9,10 @@ func TestAdd_And_List(t *testing.T) {
 	s := NewStore(50)
 
 	b1 := 3.0
-	s.Add("add", 2, &b1, 5)
+	s.Add("add", 2, &b1, 5, "")
 
 	b2 := 4.0
-	s.Add("subtract", 10, &b2, 6)
+	s.Add("subtract", 10, &b2, 6, "")
 
 	entries := s.List()
 	if len(entries) != 2 {
@@ -31,7 +31,7 @@ func TestAdd_And_List(t *testing.T) {
 func TestAdd_UnaryOperation(t *testing.T) {
 	s := NewStore(50)
 
-	entry := s.Add("sqrt", 16, nil, 4)
+	entry := s.Add("sqrt", 16, nil, 4, "")
 	if entry.B != nil {
 		t.Errorf("B should be nil for unary operation")
 	}
@@ -48,7 +48,7 @@ func TestAdd_MaxSize(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		b := float64(i)
-		s.Add("add", float64(i), &b, float64(i*2))
+		s.Add("add", float64(i), &b, float64(i*2), "")
 	}
 
 	entries := s.List()
@@ -72,8 +72,8 @@ func TestClear(t *testing.T) {
 	s := NewStore(50)
 
 	b := 3.0
-	s.Add("add", 2, &b, 5)
-	s.Add("multiply", 3, &b, 9)
+	s.Add("add", 2, &b, 5, "")
+	s.Add("multiply", 3, &b, 9, "")
 
 	s.Clear()
 
@@ -87,9 +87,9 @@ func TestAutoIncrementIDs(t *testing.T) {
 	s := NewStore(50)
 
 	b := 1.0
-	e1 := s.Add("add", 1, &b, 2)
-	e2 := s.Add("add", 2, &b, 3)
-	e3 := s.Add("add", 3, &b, 4)
+	e1 := s.Add("add", 1, &b, 2, "")
+	e2 := s.Add("add", 2, &b, 3, "")
+	e3 := s.Add("add", 3, &b, 4, "")
 
 	if e1.ID != 1 {
 		t.Errorf("e1.ID = %d, want 1", e1.ID)
@@ -106,7 +106,7 @@ func TestTimestampsAreSet(t *testing.T) {
 	s := NewStore(50)
 
 	b := 1.0
-	entry := s.Add("add", 1, &b, 2)
+	entry := s.Add("add", 1, &b, 2, "")
 
 	if entry.Timestamp == "" {
 		t.Error("Timestamp should not be empty")
@@ -128,7 +128,7 @@ func TestConcurrentAccess(t *testing.T) {
 		go func(n int) {
 			defer wg.Done()
 			b := float64(n)
-			s.Add("add", float64(n), &b, float64(n*2))
+			s.Add("add", float64(n), &b, float64(n*2), "")
 		}(i)
 	}
 
@@ -163,7 +163,7 @@ func TestList_ReturnsCopy(t *testing.T) {
 	s := NewStore(50)
 
 	b := 3.0
-	s.Add("add", 2, &b, 5)
+	s.Add("add", 2, &b, 5, "")
 
 	list1 := s.List()
 	list1[0].Operation = "modified"
@@ -241,12 +241,12 @@ func TestIDsContinueAfterClear(t *testing.T) {
 	s := NewStore(50)
 
 	b := 1.0
-	s.Add("add", 1, &b, 2)
-	s.Add("add", 2, &b, 3)
+	s.Add("add", 1, &b, 2, "")
+	s.Add("add", 2, &b, 3, "")
 
 	s.Clear()
 
-	e := s.Add("add", 3, &b, 4)
+	e := s.Add("add", 3, &b, 4, "")
 	if e.ID != 3 {
 		t.Errorf("ID after clear = %d, want 3 (IDs should continue)", e.ID)
 	}

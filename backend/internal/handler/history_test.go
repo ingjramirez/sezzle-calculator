@@ -35,8 +35,8 @@ func TestHistoryHandler_GetEmpty(t *testing.T) {
 func TestHistoryHandler_GetWithEntries(t *testing.T) {
 	store := history.NewStore(50)
 	b := 3.0
-	store.Add("add", 2, &b, 5)
-	store.Add("subtract", 10, &b, 7)
+	store.Add("add", 2, &b, 5, "")
+	store.Add("subtract", 10, &b, 7, "")
 
 	handler := NewHistoryHandler(store)
 
@@ -69,7 +69,7 @@ func TestHistoryHandler_GetWithEntries(t *testing.T) {
 func TestHistoryHandler_Delete(t *testing.T) {
 	store := history.NewStore(50)
 	b := 3.0
-	store.Add("add", 2, &b, 5)
+	store.Add("add", 2, &b, 5, "")
 
 	handler := NewHistoryHandler(store)
 

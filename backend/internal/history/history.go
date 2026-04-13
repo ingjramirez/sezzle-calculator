@@ -25,17 +25,18 @@ func NewStore(maxSize int) *Store {
 }
 
 // Add adds a new entry and returns it (with ID and timestamp set).
-func (s *Store) Add(operation string, a float64, b *float64, result float64) model.HistoryEntry {
+func (s *Store) Add(operation string, a float64, b *float64, result float64, resultDisplay string) model.HistoryEntry {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	entry := model.HistoryEntry{
-		ID:        s.nextID,
-		Operation: operation,
-		A:         a,
-		B:         b,
-		Result:    result,
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		ID:            s.nextID,
+		Operation:     operation,
+		A:             a,
+		B:             b,
+		Result:        result,
+		ResultDisplay: resultDisplay,
+		Timestamp:     time.Now().UTC().Format(time.RFC3339),
 	}
 	s.nextID++
 

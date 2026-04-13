@@ -6,19 +6,29 @@ beforeEach(() => {
 });
 
 describe('calculate', () => {
-  it('returns result number on successful response', async () => {
+  it('returns result and resultDisplay on successful response', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ result: 42, operation: 'add' }),
     });
 
-    const result = await calculate('add', 20, 22);
-    expect(result).toBe(42);
+    const response = await calculate('add', 20, 22);
+    expect(response).toEqual({ result: 42, resultDisplay: undefined });
     expect(global.fetch).toHaveBeenCalledWith('/api/calculate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ operation: 'add', a: 20, b: 22 }),
     });
+  });
+
+  it('returns resultDisplay when provided by API', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ result: Infinity, resultDisplay: '4.02387\u00d710^2567', operation: 'factorial' }),
+    });
+
+    const response = await calculate('factorial', 1000, 0);
+    expect(response).toEqual({ result: Infinity, resultDisplay: '4.02387\u00d710^2567' });
   });
 
   it('throws with error message on server error', async () => {
@@ -51,19 +61,29 @@ describe('calculate', () => {
 });
 
 describe('calculateUnary', () => {
-  it('returns result on successful response', async () => {
+  it('returns result and resultDisplay on successful response', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ result: 3, operation: 'sqrt' }),
     });
 
-    const result = await calculateUnary('sqrt', 9);
-    expect(result).toBe(3);
+    const response = await calculateUnary('sqrt', 9);
+    expect(response).toEqual({ result: 3, resultDisplay: undefined });
     expect(global.fetch).toHaveBeenCalledWith('/api/calculate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ operation: 'sqrt', a: 9 }),
     });
+  });
+
+  it('returns resultDisplay when provided by API', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ result: Infinity, resultDisplay: '4.02387\u00d710^2567', operation: 'factorial' }),
+    });
+
+    const response = await calculateUnary('factorial', 1000);
+    expect(response).toEqual({ result: Infinity, resultDisplay: '4.02387\u00d710^2567' });
   });
 
   it('throws with error message on server error', async () => {
@@ -96,19 +116,29 @@ describe('calculateUnary', () => {
 });
 
 describe('evaluate', () => {
-  it('returns result number on successful response', async () => {
+  it('returns result and resultDisplay on successful response', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ result: 20, expression: '( 2 + 3 ) * 4' }),
     });
 
-    const result = await evaluate('( 2 + 3 ) * 4');
-    expect(result).toBe(20);
+    const response = await evaluate('( 2 + 3 ) * 4');
+    expect(response).toEqual({ result: 20, resultDisplay: undefined });
     expect(global.fetch).toHaveBeenCalledWith('/api/evaluate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ expression: '( 2 + 3 ) * 4' }),
     });
+  });
+
+  it('returns resultDisplay when provided by API', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ result: Infinity, resultDisplay: '1.5\u00d710^100', expression: '10 ^ 100 * 1.5' }),
+    });
+
+    const response = await evaluate('10 ^ 100 * 1.5');
+    expect(response).toEqual({ result: Infinity, resultDisplay: '1.5\u00d710^100' });
   });
 
   it('throws with error message on server error', async () => {

@@ -15,45 +15,46 @@ const binarySymbols: Record<string, string> = {
 };
 
 function formatEntry(entry: HistoryEntry): string {
-  const { operation, a, b, result, expression } = entry;
+  const { operation, a, b, result, expression, resultDisplay } = entry;
+  const displayResult = resultDisplay || String(result);
 
   // Expression-based entries (from /api/evaluate)
   if (expression) {
-    return `${expression} = ${result}`;
+    return `${expression} = ${displayResult}`;
   }
 
   if (b !== undefined) {
     const symbol = binarySymbols[operation] ?? operation;
-    return `${a} ${symbol} ${b} = ${result}`;
+    return `${a} ${symbol} ${b} = ${displayResult}`;
   }
 
   switch (operation) {
     case 'sqrt':
-      return `√${a} = ${result}`;
+      return `√${a} = ${displayResult}`;
     case 'sin':
-      return `sin(${a}) = ${result}`;
+      return `sin(${a}) = ${displayResult}`;
     case 'cos':
-      return `cos(${a}) = ${result}`;
+      return `cos(${a}) = ${displayResult}`;
     case 'tan':
-      return `tan(${a}) = ${result}`;
+      return `tan(${a}) = ${displayResult}`;
     case 'ln':
-      return `ln(${a}) = ${result}`;
+      return `ln(${a}) = ${displayResult}`;
     case 'log10':
-      return `log(${a}) = ${result}`;
+      return `log(${a}) = ${displayResult}`;
     case 'factorial':
-      return `${a}! = ${result}`;
+      return `${a}! = ${displayResult}`;
     case 'square':
-      return `${a}² = ${result}`;
+      return `${a}² = ${displayResult}`;
     case 'cube':
-      return `${a}³ = ${result}`;
+      return `${a}³ = ${displayResult}`;
     case 'reciprocal':
-      return `1/${a} = ${result}`;
+      return `1/${a} = ${displayResult}`;
     case 'abs':
-      return `|${a}| = ${result}`;
+      return `|${a}| = ${displayResult}`;
     case 'bitnot':
-      return `~${a} = ${result}`;
+      return `~${a} = ${displayResult}`;
     default:
-      return `${operation}(${a}) = ${result}`;
+      return `${operation}(${a}) = ${displayResult}`;
   }
 }
 
@@ -114,7 +115,7 @@ export default function History({ entries, onSelect, onClear }: HistoryProps) {
                   </span>
                 </div>
                 <div className="text-white text-base font-medium">
-                  {entry.result}
+                  {entry.resultDisplay || entry.result}
                 </div>
               </li>
             ))}

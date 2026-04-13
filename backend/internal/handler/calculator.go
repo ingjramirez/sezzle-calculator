@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 
 	"github.com/jaime-ramirez/sezzle-calculator/backend/internal/engine"
@@ -50,16 +51,32 @@ func NewCalculateHandler(store *history.Store) http.HandlerFunc {
 			return
 		}
 
+		// For large factorials, compute exact big result and format as scientific notation
+		var resultDisplay string
+		if req.Operation == "factorial" && math.IsInf(result, 0) {
+			bigResult := engine.FactorialBig(int64(*req.A))
+			if bigResult != nil {
+				resultDisplay = engine.FormatBigNumber(bigResult)
+			}
+		}
+
 		// Save to history
 		var bPtr *float64
 		if req.B != nil {
 			bPtr = req.B
 		}
-		store.Add(req.Operation, *req.A, bPtr, result)
+		store.Add(req.Operation, *req.A, bPtr, result, resultDisplay)
+
+		// JSON cannot encode +Inf, so use 0 when resultDisplay carries the value
+		jsonResult := result
+		if math.IsInf(result, 0) || math.IsNaN(result) {
+			jsonResult = 0
+		}
 
 		resp := model.CalculateResponse{
-			Result:    result,
-			Operation: req.Operation,
+			Result:        jsonResult,
+			ResultDisplay: resultDisplay,
+			Operation:     req.Operation,
 		}
 
 		w.Header().Set("Content-Type", "application/json")

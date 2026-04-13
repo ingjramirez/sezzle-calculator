@@ -1,6 +1,6 @@
 import type { ApiResponse, ApiError, HistoryEntry } from '../types/calculator';
 
-export async function evaluate(expression: string): Promise<number> {
+export async function evaluate(expression: string): Promise<{ result: number; resultDisplay?: string }> {
   let response: Response;
 
   try {
@@ -18,15 +18,15 @@ export async function evaluate(expression: string): Promise<number> {
     throw new Error(body.error || `Server error: ${response.status}`);
   }
 
-  const data = (await response.json()) as { result: number; expression: string };
-  return data.result;
+  const data = (await response.json()) as { result: number; resultDisplay?: string; expression: string };
+  return { result: data.result, resultDisplay: data.resultDisplay };
 }
 
 export async function calculate(
   operation: string,
   a: number,
   b: number,
-): Promise<number> {
+): Promise<{ result: number; resultDisplay?: string }> {
   let response: Response;
 
   try {
@@ -45,13 +45,13 @@ export async function calculate(
   }
 
   const data = (await response.json()) as ApiResponse;
-  return data.result;
+  return { result: data.result, resultDisplay: data.resultDisplay };
 }
 
 export async function calculateUnary(
   operation: string,
   a: number,
-): Promise<number> {
+): Promise<{ result: number; resultDisplay?: string }> {
   let response: Response;
 
   try {
@@ -70,7 +70,7 @@ export async function calculateUnary(
   }
 
   const data = (await response.json()) as ApiResponse;
-  return data.result;
+  return { result: data.result, resultDisplay: data.resultDisplay };
 }
 
 export async function getHistory(): Promise<HistoryEntry[]> {

@@ -5,9 +5,9 @@ import Calculator from './Calculator';
 
 // Mock the api so useCalculator never does real fetches
 vi.mock('../services/api', () => ({
-  calculate: vi.fn().mockResolvedValue(0),
-  calculateUnary: vi.fn().mockResolvedValue(0),
-  evaluate: vi.fn().mockResolvedValue(0),
+  calculate: vi.fn().mockResolvedValue({ result: 0 }),
+  calculateUnary: vi.fn().mockResolvedValue({ result: 0 }),
+  evaluate: vi.fn().mockResolvedValue({ result: 0 }),
   getHistory: vi.fn().mockResolvedValue([]),
   clearHistory: vi.fn().mockResolvedValue(undefined),
 }));
@@ -21,8 +21,8 @@ const mockedCalculateUnary = vi.mocked(apiCalculateUnary);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockedCalculate.mockResolvedValue(0);
-  mockedCalculateUnary.mockResolvedValue(0);
+  mockedCalculate.mockResolvedValue({ result: 0 });
+  mockedCalculateUnary.mockResolvedValue({ result: 0 });
   mockedGetHistory.mockResolvedValue([]);
   mockedClearHistory.mockResolvedValue(undefined);
 });
@@ -146,7 +146,7 @@ describe('Calculator', () => {
 
   it('refreshes history after a binary calculation', async () => {
     const user = userEvent.setup();
-    mockedCalculate.mockResolvedValue(8);
+    mockedCalculate.mockResolvedValue({ result: 8 });
     render(<Calculator />);
     // Wait for initial history fetch
     await waitFor(() => {
@@ -165,7 +165,7 @@ describe('Calculator', () => {
 
   it('refreshes history after a unary operation', async () => {
     const user = userEvent.setup();
-    mockedCalculateUnary.mockResolvedValue(3);
+    mockedCalculateUnary.mockResolvedValue({ result: 3 });
     render(<Calculator />);
     // Wait for initial history fetch
     await waitFor(() => {

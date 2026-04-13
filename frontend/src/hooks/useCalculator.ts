@@ -10,6 +10,7 @@ const initialState: CalculatorState = {
   expression: '',
   expressionTokens: [],
   openParens: 0,
+  resultDisplay: '',
 };
 
 function updateTokensForDigit(tokens: string[], digit: string, waitingForOperand: boolean): string[] {
@@ -116,9 +117,11 @@ export function reducer(state: CalculatorState, action: CalculatorAction): Calcu
     }
 
     case 'CALCULATE': {
+      const displayValue = action.resultDisplay || String(action.result);
       return {
         ...state,
-        display: String(action.result),
+        display: displayValue,
+        resultDisplay: action.resultDisplay || '',
         previousValue: null,
         operation: null,
         waitingForOperand: true,
@@ -148,6 +151,7 @@ export function reducer(state: CalculatorState, action: CalculatorAction): Calcu
       return {
         ...initialState,
         display: action.message,
+        resultDisplay: '',
       };
     }
 
@@ -209,8 +213,8 @@ export function useCalculator() {
     if (hasParens) {
       const expr = state.expressionTokens.join(' ');
       try {
-        const result = await apiEvaluate(expr);
-        dispatch({ type: 'CALCULATE', result });
+        const { result, resultDisplay } = await apiEvaluate(expr);
+        dispatch({ type: 'CALCULATE', result, resultDisplay });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Calculation error';
         dispatch({ type: 'SET_ERROR', message });
@@ -220,8 +224,8 @@ export function useCalculator() {
     if (state.previousValue === null || state.operation === null) return;
     const b = parseFloat(state.display);
     try {
-      const result = await apiCalculate(state.operation, state.previousValue, b);
-      dispatch({ type: 'CALCULATE', result });
+      const { result, resultDisplay } = await apiCalculate(state.operation, state.previousValue, b);
+      dispatch({ type: 'CALCULATE', result, resultDisplay });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Calculation error';
       dispatch({ type: 'SET_ERROR', message });
@@ -243,8 +247,8 @@ export function useCalculator() {
   const unaryOperation = useCallback(async (operation: string) => {
     const a = parseFloat(state.display);
     try {
-      const result = await apiCalculateUnary(operation, a);
-      dispatch({ type: 'CALCULATE', result });
+      const { result, resultDisplay } = await apiCalculateUnary(operation, a);
+      dispatch({ type: 'CALCULATE', result, resultDisplay });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Calculation error';
       dispatch({ type: 'SET_ERROR', message });
